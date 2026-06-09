@@ -1,22 +1,168 @@
-import React, { useState, useMemo } from 'react';
-import { useAppContext, PRICING, SeatType } from '../store/AppContext';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { PRICING, SeatType } from '../store/AppContext';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils';
-import { Search, CheckCircle2, UserCheck, AlertCircle } from 'lucide-react';
+import { Search, CheckCircle2, UserCheck, AlertCircle, QrCode, X, Loader2, UploadCloud } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import { supabase } from '../supabaseClient';
+import jsQR from 'jsqr'; // Library ekstraksi QR dari gambar
 
 export default function CheckIn() {
-  const { bookings, updateBooking } = useAppContext();
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   
-  // Computations for map
+  // Referensi untuk input file tersembunyi
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const { data, error } = await supabase.from('tickets').select('*');
+        if (error) throw error;
+
+        if (data) {
+          const formatted = data.map((row: any) => ({
+            id: row.id,
+            buyerName: row.buyer_name,
+            seatNumbers: row.seat_numbers || [],
+            verified: row.is_verified,
+            checkedIn: row.is_checked_in,
+            checkedInSeats: row.is_checked_in ? row.seat_numbers : [],
+            createdAt: row.created_at
+          }));
+          formatted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setBookings(formatted);
+        }
+      } catch (error) {
+        console.error("Gagal menarik data tiket:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
+
+  // Membaca QR Code (Dari Kamera ATAU Gambar)
+  const handleScanQR = (text: string) => {
+    if (!text) return;
+
+    // Log ke console untuk melihat apa yang sebenarnya terbaca
+    console.log("Raw Scanned Data:", text);
+
+    try {
+      // Coba parse JSON
+      const qrData = JSON.parse(text); 
+      setSearchQuery(qrData.id); 
+      setShowScanner(false);
+      alert(`Berhasil! Tiket ditemukan: ${qrData.buyer}`);
+    } catch (e) {
+      // Jika teksnya bukan JSON (misal cuma ID), tetap terima
+      console.log("Data bukan JSON, menganggapnya sebagai ID mentah:", text);
+      setSearchQuery(text);
+      setShowScanner(false);
+    }
+  };
+
+  // FUNGSI BARU: Upload Foto Screenshot dan Ekstrak QR Code
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // PERBAIKAN: Gunakan Math.floor untuk memastikan dimensi adalah bilangan bulat
+        const MAX_WIDTH = 600;
+        const scale = Math.min(MAX_WIDTH / img.width, 1);
+        const newWidth = Math.floor(img.width * scale);
+        const newHeight = Math.floor(img.height * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        
+        // Ambil data gambar
+        const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
+        
+        // Pengecekan keamanan: Pastikan data gambar tidak kosong
+        if (!imageData || imageData.data.length === 0) {
+            alert("Gambar tidak terbaca, coba screenshot ulang bagian QR Code saja.");
+            return;
+        }
+
+        try {
+            // Panggil jsQR
+            const code = jsQR(imageData.data, newWidth, newHeight, {
+                inversionAttempts: "dontInvert",
+            });
+            
+            if (code) {
+                handleScanQR(code.data); 
+            } else {
+                alert("QR Code tidak terdeteksi. Tips: Pastikan gambar adalah screenshot yang di-crop hanya pada bagian QR Code saja.");
+            }
+        } catch (err) {
+            console.error("Error saat memproses QR:", err);
+            alert("Gagal memproses gambar QR.");
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const updateCheckInStatus = async (id: string, isCheckedIn: boolean, checkedSeats: string[]) => {
+    setBookings(prev => prev.map(b => b.id === id ? {
+      ...b,
+      checkedIn: isCheckedIn,
+      checkedInSeats: checkedSeats
+    } : b));
+
+    try {
+      await supabase.from('tickets').update({
+        is_checked_in: isCheckedIn,
+      }).eq('id', id);
+    } catch (error) {
+      console.error("Gagal update Check-In di Supabase", error);
+      alert("Gagal menyimpan kehadiran ke database. Periksa koneksi internet.");
+    }
+  };
+
+  const handleBulkCheckIn = (id: string, allCheckedIn: boolean, seats: string[]) => {
+    updateCheckInStatus(id, !allCheckedIn, !allCheckedIn ? [...seats] : []);
+  };
+
+  const handleSingleCheckIn = (id: string, seat: string, ticket: any) => {
+    let currentCheckedInSeats = ticket.checkedInSeats || (ticket.checkedIn ? [...ticket.seatNumbers] : []);
+    
+    let newList = [...currentCheckedInSeats];
+    if (newList.includes(seat)) {
+      newList = newList.filter((s: string) => s !== seat);
+    } else {
+      newList.push(seat);
+    }
+    
+    const isAllChecked = newList.length === ticket.seatNumbers.length;
+    updateCheckInStatus(id, isAllChecked, newList);
+  };
+
   const { bookedSeats, checkedInSeats } = useMemo(() => {
     const booked = new Set<string>();
     const checkedIn = new Set<string>();
     
     bookings.forEach(b => {
-      b.seatNumbers.forEach(s => {
+      b.seatNumbers.forEach((s: string) => {
         booked.add(s);
         if (b.checkedInSeats && b.checkedInSeats.includes(s)) {
           checkedIn.add(s);
@@ -31,42 +177,60 @@ export default function CheckIn() {
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
-      const sorted = [...bookings].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      return showAll ? sorted : sorted.slice(0, 10);
+      return showAll ? bookings : bookings.slice(0, 10);
     }
     const query = searchQuery.toLowerCase();
     return bookings.filter(b => 
       b.id.toLowerCase().includes(query) || 
       b.buyerName.toLowerCase().includes(query) ||
-      b.seatNumbers.some(s => s.toLowerCase().includes(query))
+      b.seatNumbers.some((s: string) => s.toLowerCase().includes(query))
     );
   }, [searchQuery, bookings, showAll]);
 
-  const handleBulkCheckIn = (id: string, allCheckedIn: boolean, seats: string[]) => {
-    updateBooking(id, { 
-      checkedInSeats: allCheckedIn ? [] : [...seats],
-      checkedIn: !allCheckedIn 
-    });
-  };
-
-  const handleSingleCheckIn = (id: string, seat: string, ticket: any) => {
-    let currentCheckedInSeats = ticket.checkedInSeats || (ticket.checkedIn ? [...ticket.seatNumbers] : []);
-    
-    let newList = [...currentCheckedInSeats];
-    if (newList.includes(seat)) {
-      newList = newList.filter((s: string) => s !== seat);
-    } else {
-      newList.push(seat);
-    }
-    
-    updateBooking(id, {
-      checkedInSeats: newList,
-      checkedIn: newList.length === ticket.seatNumbers.length
-    });
-  };
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-amber-500 gap-4">
+         <Loader2 className="w-10 h-10 animate-spin" />
+         <p className="text-gray-400 font-medium tracking-wider animate-pulse">Memuat data kursi real-time...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 relative">
+      
+      {showScanner && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl overflow-hidden p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-white font-bold flex items-center gap-2"><QrCode className="text-amber-500 w-5 h-5"/> Scan QR Tiket</h3>
+              <button onClick={() => setShowScanner(false)} className="text-gray-400 hover:text-red-500 transition-colors p-1 bg-white/5 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="rounded-2xl overflow-hidden bg-black aspect-square border-2 border-dashed border-amber-500/50 relative">
+              <Scanner
+                onResult={(text) => {
+                  if (text) handleScanQR(text);
+                }}
+                onError={(error) => console.log("Scanner Error:", error?.message)}
+                  // Konfigurasi tambahan agar lebih stabil:
+                  options={{
+                  delayBetweenScanAttempts: 500, // Cek tiap 0.5 detik, jangan terlalu cepat
+                  scanRegion: { width: 300, height: 300 }, // Fokus ke tengah kamera
+                }}
+                constraints={{
+                  facingMode: 'environment', // Wajib: Kamera Belakang
+                }}
+              />
+              <div className="absolute inset-0 border-[40px] border-black/30 pointer-events-none" />
+            </div>
+            <p className="text-center text-gray-400 mt-6 text-sm">Arahkan kamera ke QR Code pada tiket digital pengunjung.</p>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-3xl font-display font-bold text-white mb-2">Registrasi Kehadiran (Check-In)</h1>
         <p className="text-gray-400">Verifikasi tiket pembeli yang hadir dan pantau okupansi kursi secara real-time.</p>
@@ -78,15 +242,42 @@ export default function CheckIn() {
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-white/10 bg-white/5">
             <CardContent className="p-5 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Cari ID Tiket, Nama, atau Kursi..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-black border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Cari ID Tiket, Nama, Kursi..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                
+                {/* TOMBOL SCAN KAMERA */}
+                <button 
+                  onClick={() => setShowScanner(true)}
+                  className="bg-amber-500 hover:bg-amber-400 text-black px-4 rounded-lg flex items-center justify-center font-bold transition-colors shrink-0"
+                  title="Gunakan Kamera Scanner"
+                >
+                  <QrCode className="w-5 h-5" />
+                </button>
+
+                {/* TOMBOL UPLOAD GAMBAR */}
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-lg flex items-center justify-center font-bold transition-colors shrink-0 border border-white/10"
+                  title="Upload Gambar/Screenshot Tiket"
+                >
+                  <UploadCloud className="w-5 h-5" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                    className="hidden" 
+                  />
+                </button>
               </div>
 
               <div className="space-y-3">
@@ -107,11 +298,11 @@ export default function CheckIn() {
                   const allCheckedIn = currentCheckedInSeats.length === ticket.seatNumbers.length;
                   
                   return (
-                  <div key={ticket.id} className="bg-black border border-white/10 rounded-xl p-4 flex flex-col gap-3">
+                  <div key={ticket.id} className="bg-black border border-white/10 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-amber-500/30">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-bold text-white text-sm">{ticket.buyerName}</div>
-                        <div className="text-xs text-gray-400 font-mono mt-0.5">ID: {ticket.id.toUpperCase()}</div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">ID: {ticket.id.toUpperCase()}</div>
                       </div>
                       {!ticket.verified && (
                         <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-500/10 px-2 py-0.5 rounded">
@@ -121,7 +312,7 @@ export default function CheckIn() {
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                      {ticket.seatNumbers.map(s => {
+                      {ticket.seatNumbers.map((s: string) => {
                         const isChecked = currentCheckedInSeats.includes(s);
                         return (
                         <button 
@@ -143,12 +334,12 @@ export default function CheckIn() {
                     <Button 
                       variant={allCheckedIn ? 'outline' : 'primary'}
                       onClick={() => handleBulkCheckIn(ticket.id, allCheckedIn, ticket.seatNumbers)}
-                      className={cn("w-full h-8 text-xs mt-1", allCheckedIn && "border-green-500/50 text-green-500 hover:bg-green-500/10")}
+                      className={cn("w-full h-8 text-xs mt-1", allCheckedIn && "border-green-500/50 text-green-500 hover:bg-green-500/10 bg-transparent")}
                     >
                       {allCheckedIn ? (
-                         <><CheckCircle2 className="w-3 h-3 mr-1.5" /> Batalkan Semua</>
+                         <><CheckCircle2 className="w-3 h-3 mr-1.5" /> Batalkan Kehadiran</>
                       ) : (
-                         <><UserCheck className="w-3 h-3 mr-1.5" /> Check-in Semua Kursi</>
+                         <><UserCheck className="w-3 h-3 mr-1.5" /> Tandai Hadir (Semua)</>
                       )}
                     </Button>
                   </div>
@@ -171,15 +362,15 @@ export default function CheckIn() {
           <Card className="border-white/10 bg-white/5">
             <CardContent className="p-5 flex items-center justify-between">
                <div>
-                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Kehadiran</div>
+                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Tiket Di-scan</div>
                  <div className="text-2xl font-bold text-white">
-                   {bookings.filter(b => b.checkedIn).length} <span className="text-sm text-gray-500 font-normal">/ {bookings.length} Booking</span>
+                   {bookings.filter(b => b.checkedIn).length} <span className="text-sm text-gray-500 font-normal">/ {bookings.length}</span>
                  </div>
                </div>
                <div className="text-right">
                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Kursi Terisi</div>
                  <div className="text-2xl font-bold text-amber-500">
-                   {checkedInSeats.size} <span className="text-sm text-gray-500 font-normal">/ {bookedSeats.size} Seat</span>
+                   {checkedInSeats.size} <span className="text-sm text-gray-500 font-normal">/ {bookedSeats.size}</span>
                  </div>
                </div>
             </CardContent>
@@ -188,21 +379,21 @@ export default function CheckIn() {
 
         {/* Live Seat Map */}
         <div className="lg:col-span-2">
-          <Card className="border-white/10 bg-white/5 min-h-[600px]">
+          <Card className="border-white/10 bg-white/5 min-h-[600px] sticky top-24">
             <CardContent className="p-6">
               
               <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                <h3 className="font-bold text-white">Live Seat Map (Kehadiran)</h3>
+                <h3 className="font-bold text-white">Live Seat Map (Status Pintu)</h3>
                 
                 <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 bg-white/5 border border-white/10 rounded-sm" /> Kosong
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-white/20 border border-gray-500 rounded-sm" /> Belum Hadir
+                    <div className="w-3 h-3 bg-white/20 border border-gray-500 rounded-sm" /> Belum Datang
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-amber-500 border border-amber-400 rounded-sm" /> Hadir
+                    <div className="w-3 h-3 bg-amber-500 border border-amber-400 rounded-sm" /> Di Dalam
                   </div>
                 </div>
               </div>
@@ -240,7 +431,7 @@ export default function CheckIn() {
                                       ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                                       : isBooked
                                         ? "bg-white/20 border border-gray-500 text-gray-300"
-                                        : "bg-white/5 border border-white/10 text-gray-600"
+                                        : "bg-white/5 border border-white/10 text-gray-700"
                                   )}
                                 >
                                    {cIndex + 1}

@@ -3,11 +3,39 @@ import { Calendar, MapPin, Clock, ExternalLink, Bell, Film } from 'lucide-react'
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Link } from 'react-router-dom';
-import { format, differenceInSeconds } from 'date-fns';
+import { differenceInSeconds } from 'date-fns';
+import { supabase } from '../supabaseClient'; // Import Supabase Client
+
+// Buat tipe data untuk film agar TypeScript tidak error
+interface Movie {
+  title: string;
+  synopsis: string;
+  poster_url: string;
+}
 
 export default function HomePage() {
-  const showTime = new Date('2026-07-11T15:00:00+07:00');
+  // Waktu tayang sudah diupdate menjadi 11:30 WIB
+  const showTime = new Date('2026-07-11T11:30:00+07:00');
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+  
+  const [movie, setMovie] = useState<Movie | null>(null);
+
+  useEffect(() => {
+    const fetchMovie = async () => {
+      const { data, error } = await supabase
+        .from('movies')
+        .select('*')
+        .single(); 
+
+      if (error) {
+        console.error("Gagal mengambil data film:", error);
+      } else {
+        setMovie(data);
+      }
+    };
+
+    fetchMovie();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,8 +62,8 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-[#0A0A0A]/80 to-transparent z-10" />
           <img 
-            src="https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80&w=2000" 
-            alt="Cinema Hero" 
+            src={movie?.poster_url || "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80&w=2000"} 
+            alt={movie?.title || "Cinema Hero"} 
             className="w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-700"
           />
         </div>
@@ -46,10 +74,10 @@ export default function HomePage() {
             <span>Nonton Bareng Event 2026</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight leading-tight">
-            Children of <span className="text-amber-500">Heaven</span> <span className="text-gray-500 text-3xl">(2026)</span>
+            {movie ? movie.title : "Memuat Judul..."} <span className="text-gray-500 text-3xl">(2026)</span>
           </h1>
           <p className="text-sm md:text-base text-gray-400 max-w-2xl mb-8">
-            Bersiap untuk pengalaman sinematik yang menginspirasi. Saksikan kembali mahakarya ini di layar lebar secara ekslusif.
+            {movie ? movie.synopsis : "Memuat sinopsis film dari database..."}
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/book">
@@ -57,7 +85,7 @@ export default function HomePage() {
                 Booking Tiket
               </Button>
             </Link>
-            <a href="https://id.wikipedia.org/wiki/Children_of_Heaven_(film_2026)" target="_blank" rel="noreferrer">
+            <a href="https://id.wikipedia.org/wiki/Children_of_Heaven" target="_blank" rel="noreferrer">
               <Button variant="outline" className="h-10 px-6 rounded-full uppercase tracking-wider text-[10px] border-white/20">
                 <ExternalLink className="w-4 h-4 mr-2" /> Detail Film
               </Button>
@@ -105,7 +133,8 @@ export default function HomePage() {
             <div>
               <div className="text-sm text-gray-400 font-medium mb-1">Waktu</div>
               <div className="text-lg font-semibold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-500" /> 15:00 WIB
+                {/* Waktu sudah disesuaikan menjadi 11:30 WIB */}
+                <Clock className="w-5 h-5 text-amber-500" /> 11:30 WIB
               </div>
             </div>
             <div>
@@ -131,7 +160,7 @@ export default function HomePage() {
           <div className="space-y-4">
             {[
               "Pastikan barcode tiket PDF/JPG sudah diunduh di perangkat Anda sebelum tiba di venue.",
-              "Datang selambat-lambatnya 15 menit sebelum jam tayang (Pukul 14:45 WIB).",
+              "Datang selambat-lambatnya 15 menit sebelum jam tayang (Pukul 11:15 WIB).",
               "Tunjukkan barcode tiket digital Anda kepada panitia di meja registrasi Cinepolis Studio 1.",
               "Pastikan nama dan nomor seat pada tiket digital sesuai.",
             ].map((text, i) => (
@@ -150,11 +179,12 @@ export default function HomePage() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 px-8 relative overflow-hidden">
             <div className="absolute left-10 top-8 bottom-8 w-px bg-white/10" />
             <div className="space-y-8 relative">
+              {/* Rundown acara yang baru dan padat */}
               {[
-                { time: "14:00 - 14:45", title: "Registrasi & Klaim Tiket", desc: "Panitia mencetak presensi kehadiran." },
-                { time: "14:45 - 15:00", title: "Pintu Studio Dibuka", desc: "Penonton mulai memasuki studio 1 sesuai nomor kursi." },
-                { time: "15:00 - 16:30", title: "Penayangan Film", desc: "Pemutaran Children of Heaven (Subtitle ID/EN)." },
-                { time: "16:30 - 17:00", title: "Foto Bersama & Penutupan", desc: "Sesi foto bersama seluruh penonton dan panitia." },
+                { time: "11:30 - 13:00", title: "Registrasi & Klaim Tiket", desc: "Klaim tiket fisik dan pembagian Nobar Snack Pack." },
+                { time: "12:00 - 13:00", title: "Makan Siang Buffet", desc: "Khusus untuk tamu dengan tiket VIP." },
+                { time: "13:00 - 13:30", title: "Pintu Studio Dibuka & Seremoni", desc: "Penonton memasuki Cinema 1, penayangan video sponsor, seremoni pembukaan, dan sesi foto bersama." },
+                { time: "13:30 - 15:00", title: "Penayangan Film & Penutupan", desc: "Pemutaran Children of Heaven (Subtitle ID), penutupan dan ucapan terimakasih." },
               ].map((item, i) => (
                 <div key={i} className="flex gap-6 relative">
                   <div className="w-4 h-4 rounded-full bg-amber-500 ring-4 ring-black mt-1 shrink-0 z-10" />

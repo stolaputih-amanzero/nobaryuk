@@ -1,16 +1,75 @@
-import React, { useState, useMemo } from 'react';
-import { useAppContext, PRICING, SeatType, TicketBooking } from '../store/AppContext';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useAppContext, PRICING, SeatType } from '../store/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { formatRupiah, cn } from '@/utils';
-import { Check, Info, Upload } from 'lucide-react';
+import { Check, Upload } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '../supabaseClient'; // Import Supabase Client
+
+// FUNGSI PINTAR UNTUK MENGURUTKAN KURSI (Row A-Z, lalu Angka 1-99)
+const sortSeats = (seats: string[]) => {
+  return [...seats].sort((a, b) => {
+    // Memisahkan prefix (contoh: 'RT-') dengan nomor kursi ('E5')
+    const partsA = a.split('-');
+    const partsB = b.split('-');
+    const seatA = partsA.length > 1 ? partsA[1] : a;
+    const seatB = partsB.length > 1 ? partsB[1] : b;
+
+    // Menangkap Huruf dan Angka, misal 'E' dan '5'
+    const matchA = seatA.match(/([A-Za-z]+)(\d+)/);
+    const matchB = seatB.match(/([A-Za-z]+)(\d+)/);
+
+    if (matchA && matchB) {
+      const rowA = matchA[1];
+      const numA = parseInt(matchA[2], 10);
+      const rowB = matchB[1];
+      const numB = parseInt(matchB[2], 10);
+
+      // Jika barisnya sama (misal sama-sama 'E'), urutkan berdasarkan angkanya
+      if (rowA === rowB) {
+        return numA - numB; 
+      }
+      // Jika barisnya beda (misal 'E' dan 'F'), urutkan sesuai abjad
+      return rowA.localeCompare(rowB); 
+    }
+    return a.localeCompare(b);
+  });
+};
 
 export default function BookTickets() {
   const { bookings, addBooking, updateBooking } = useAppContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
+
+  // State baru untuk menyimpan data kursi yang benar-benar terpesan di Supabase
+  const [dbBookings, setDbBookings] = useState<any[]>([]);
+
+  // Ambil data pesanan langsung dari Supabase untuk memetakan kursi yang tidak tersedia
+  useEffect(() => {
+    const fetchReservedSeats = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('id, seat_numbers');
+        
+        if (error) throw error;
+
+        if (data) {
+          const formatted = data.map((row: any) => ({
+            id: row.id,
+            seatNumbers: row.seat_numbers || []
+          }));
+          setDbBookings(formatted);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data kursi terblokir:", error);
+      }
+    };
+
+    fetchReservedSeats();
+  }, []);
 
   const editBooking = useMemo(() => {
     return editId ? bookings.find(b => b.id === editId) : null;
@@ -47,21 +106,19 @@ export default function BookTickets() {
         settlementDate: editBooking.settlementDate || '',
       });
       setSelectedSeats(editBooking.seatNumbers);
-      // We cannot set File state back from URL, so we leave proofFile alone 
-      // unless we want to track the existing proof URL, but that's handled by update logic.
     }
   }, [editBooking]);
   
-  // Calculate availability map
+  // PERBAIKAN: Hitung ketersediaan kursi berdasarkan database Supabase (dbBookings)
   const unavailableSeats = useMemo(() => {
     const set = new Set<string>();
-    bookings.forEach(b => {
-      // Exclude seats of the current booking if we are editing it
-      if (editBooking && b.id === editBooking.id) return;
+    dbBookings.forEach(b => {
+      // Jika sedang mengedit, jangan blokir kursi milik tiket itu sendiri
+      if (editId && b.id === editId) return;
       b.seatNumbers.forEach(s => set.add(s));
     });
     return set;
-  }, [bookings, editBooking]);
+  }, [dbBookings, editId]);
 
   const currentTypeInfo = PRICING[form.seatType];
 
@@ -78,53 +135,83 @@ export default function BookTickets() {
       setProofFile(null);
       return;
     }
-    
-    // Max 2MB limit
     if (file.size > 2 * 1024 * 1024) {
       alert("Uh oh! Ukuran file maksimal 2MB. Silahkan compress foto Anda atau pilih foto lain.");
       e.target.value = '';
       return;
     }
-    
     setProofFile(file);
   };
 
   const totalPrice = selectedSeats.length * currentTypeInfo.price;
   const totalCost = selectedSeats.length * currentTypeInfo.cost;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedSeats.length === 0) return alert("Pilih minimal 1 kursi!");
     
-    let paymentProofUrl = editBooking?.paymentProofUrl; // keep old proof by default
+    let paymentProofUrl = editBooking?.paymentProofUrl;
     if (proofFile) {
        paymentProofUrl = URL.createObjectURL(proofFile); 
     }
     
+    // PERBAIKAN: Urutkan kursi sebelum dikirim ke database
+    const sortedSeats = sortSeats(selectedSeats);
+
+    const ticketData = {
+      buyer_name: form.buyerName,
+      marketing_name: form.marketingName,
+      seat_type: form.seatType,
+      seat_numbers: sortedSeats, // Gunakan array yang sudah terurut
+      payment_method: form.paymentMethod,
+      payment_tenor: form.paymentTenor,
+      subtitle_language: form.subtitleLanguage,
+      total_price: totalPrice,
+      is_verified: form.verified,
+      is_checked_in: false,
+      purchase_date: form.purchaseDate,
+      settlement_date: form.settlementDate === '' ? null : form.settlementDate,
+    };
+
     if (editBooking) {
+      const { error } = await supabase.from('tickets').update(ticketData).eq('id', editBooking.id);
+      if (error) {
+        console.error(error);
+        return alert("Gagal mengupdate tiket di database!");
+      }
+
       updateBooking(editBooking.id, {
         ...form,
-        seatNumbers: selectedSeats,
+        seatNumbers: sortedSeats,
         totalPrice,
         totalCost,
         paymentProofUrl,
       });
       navigate(`/ticket/${editBooking.id}`);
     } else {
-      addBooking({
-        ...form,
-        seatNumbers: selectedSeats,
-        totalPrice,
-        totalCost,
-        paymentProofUrl,
-      });
-      navigate('/dashboard');
+      const { data, error } = await supabase.from('tickets').insert([ticketData]).select();
+      if (error) {
+        console.error(error);
+        return alert("Gagal menyimpan tiket ke database Supabase!");
+      }
+
+      if (data && data.length > 0) {
+        addBooking({
+          ...form,
+          id: data[0].id,
+          seatNumbers: sortedSeats,
+          totalPrice,
+          totalCost,
+          paymentProofUrl,
+        });
+        navigate('/dashboard');
+      }
     }
   };
 
   const resetSeatType = (type: SeatType) => {
     setForm(prev => ({ ...prev, seatType: type }));
-    setSelectedSeats([]); // clear selections on type change
+    setSelectedSeats([]); 
   };
 
   return (
@@ -172,6 +259,7 @@ export default function BookTickets() {
                     value={form.purchaseDate} 
                     onChange={e => setForm({...form, purchaseDate: e.target.value})}
                     className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
                 <div>
@@ -181,6 +269,7 @@ export default function BookTickets() {
                     value={form.settlementDate} 
                     onChange={e => setForm({...form, settlementDate: e.target.value})}
                     className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
               </div>
@@ -245,7 +334,7 @@ export default function BookTickets() {
                     ) : (
                       <>
                         <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-amber-500/10 group-hover:text-amber-500 transition-colors">
-                          <Upload className="w-5 h-5 text-gray-400 group-hover:text-amber-500" />
+                          <span className="text-gray-400 group-hover:text-amber-500 text-xl">+</span>
                         </div>
                         <div>
                           <p className="text-sm text-gray-300">Klik atau Drag & Drop foto bukti</p>
@@ -337,7 +426,6 @@ export default function BookTickets() {
                             : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
                         )}
                       >
-                         {/* Visually just showing the seat number to save space */}
                          {cIndex + 1}
                       </button>
                     )

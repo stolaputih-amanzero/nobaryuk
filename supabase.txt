@@ -1,0 +1,20 @@
+supabase
+
+org name:
+flow_project
+
+project name:
+nobaryuk
+
+password:
+vjwihwds+6HvyN%
+
+Project URL
+https://xhqytzfjuvbsxmptkurh.supabase.co
+
+Publishable Key
+sb_publishable_IuYBy29eO9IWq6IcRxepqA_WBSCrDI0
+
+anon public
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhocXl0emZqdXZic3htcHRrdXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTc1MjMsImV4cCI6MjA5NjU3MzUyM30.uEDamNkMyriDxJGq60kYCRwDLXg1qMVlfVxPVSHXRV8
+
