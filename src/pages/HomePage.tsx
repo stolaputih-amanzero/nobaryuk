@@ -73,8 +73,8 @@ export default function HomePage() {
             <Film className="w-4 h-4" />
             <span>Nonton Bareng Event 2026</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight leading-tight">
-            {movie ? movie.title : "Memuat Judul..."} <span className="text-gray-500 text-3xl">(2026)</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-2 md:mb-4 leading-tight break-words">
+            Children of Heaven <span className="text-2xl md:text-4xl text-gray-500 font-normal">(2026)</span>
           </h1>
           <p className="text-sm md:text-base text-gray-400 max-w-2xl mb-8">
             {movie ? movie.synopsis : "Memuat sinopsis film dari database..."}

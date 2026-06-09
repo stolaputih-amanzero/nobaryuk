@@ -27,7 +27,9 @@ function Navbar() {
             <div className="w-8 h-8 md:w-10 md:h-10 bg-amber-500 rounded-lg flex items-center justify-center font-bold text-black border border-amber-400">
                <Ticket className="h-5 w-5 md:h-6 md:w-6" />
             </div>
-            <span className="font-display font-semibold text-xl tracking-tight text-white">Cinematix <span className="text-amber-500">Elite</span></span>
+            <span className="hidden sm:block text-xl md:text-2xl font-bold font-display tracking-widest text-white">
+              Cinematix <span className="text-amber-500">Elite</span>
+            </span>
           </div>
           <div className="flex space-x-4 sm:space-x-8 text-sm font-medium h-full">
             {navItems.map((item) => {
