@@ -1,0 +1,174 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, MapPin, Clock, ExternalLink, Bell, Film } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Link } from 'react-router-dom';
+import { format, differenceInSeconds } from 'date-fns';
+
+export default function HomePage() {
+  const showTime = new Date('2026-07-11T15:00:00+07:00');
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = differenceInSeconds(showTime, new Date());
+      if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        clearInterval(timer);
+      } else {
+        setTimeLeft({
+          d: Math.floor(diff / (24 * 3600)),
+          h: Math.floor((diff % (24 * 3600)) / 3600),
+          m: Math.floor((diff % 3600) / 60),
+          s: diff % 60,
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="space-y-12 pb-12 animate-in fade-in zoom-in-95 duration-500">
+      {/* Hero Section */}
+      <section className="relative rounded-2xl overflow-hidden border border-white/10 bg-white/5 h-[400px]">
+        <div className="absolute inset-0 bg-black">
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-[#0A0A0A]/80 to-transparent z-10" />
+          <img 
+            src="https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80&w=2000" 
+            alt="Cinema Hero" 
+            className="w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-700"
+          />
+        </div>
+        
+        <div className="relative z-20 px-8 py-16 md:px-12 flex flex-col justify-end h-full">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider mb-6 w-max">
+            <Film className="w-4 h-4" />
+            <span>Nonton Bareng Event 2026</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight leading-tight">
+            Children of <span className="text-amber-500">Heaven</span> <span className="text-gray-500 text-3xl">(2026)</span>
+          </h1>
+          <p className="text-sm md:text-base text-gray-400 max-w-2xl mb-8">
+            Bersiap untuk pengalaman sinematik yang menginspirasi. Saksikan kembali mahakarya ini di layar lebar secara ekslusif.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/book">
+              <Button className="h-10 px-8 text-xs rounded-full bg-amber-500 text-black">
+                Booking Tiket
+              </Button>
+            </Link>
+            <a href="https://id.wikipedia.org/wiki/Children_of_Heaven_(film_2026)" target="_blank" rel="noreferrer">
+              <Button variant="outline" className="h-10 px-6 rounded-full uppercase tracking-wider text-[10px] border-white/20">
+                <ExternalLink className="w-4 h-4 mr-2" /> Detail Film
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Countdown and Event Details */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-2 overflow-hidden relative">
+          <div className="absolute right-0 top-0 w-64 h-64 bg-amber-500/5 blur-[100px] rounded-full" />
+          <CardContent className="p-8">
+            <h3 className="font-display font-semibold text-2xl mb-6 text-white flex items-center gap-2">
+              <Clock className="text-amber-500" /> Countdown to Premiere
+            </h3>
+            {timeLeft ? (
+              <div className="grid grid-cols-4 gap-4 text-center">
+                {[
+                  { label: "Hari", value: timeLeft.d },
+                  { label: "Jam", value: timeLeft.h },
+                  { label: "Menit", value: timeLeft.m },
+                  { label: "Detik", value: timeLeft.s },
+                ].map((item, idx) => (
+                  <div key={idx} className="bg-black/50 border border-white/10 rounded-xl p-4 md:p-6 backdrop-blur-sm">
+                    <div className="text-3xl md:text-5xl font-bold text-amber-500 font-display mb-2">{item.value.toString().padStart(2, '0')}</div>
+                    <div className="text-xs md:text-sm text-gray-400 font-medium uppercase tracking-wider">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-32 flex items-center justify-center text-gray-500">Memuat countdown...</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col justify-center bg-white/5 border-amber-500/20">
+          <CardContent className="p-8 space-y-6">
+            <div>
+              <div className="text-sm text-gray-400 font-medium mb-1">Tanggal Tayang</div>
+              <div className="text-lg font-semibold text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-amber-500" /> Sabtu, 11 Juli 2026
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-400 font-medium mb-1">Waktu</div>
+              <div className="text-lg font-semibold text-white flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-500" /> 15:00 WIB
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-400 font-medium mb-1">Lokasi Venue</div>
+              <div className="text-lg font-semibold text-white flex items-start gap-2">
+                <MapPin className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" /> 
+                <span>Cinema 1 Cinepolis<br/><span className="text-sm text-gray-400">Senayan Park, Jakarta</span></span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Preparation Guidelines */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h2 className="text-3xl font-display font-semibold mb-6 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <Bell className="w-5 h-5" />
+            </span>
+            Panduan Klaim Tiket
+          </h2>
+          <div className="space-y-4">
+            {[
+              "Pastikan barcode tiket PDF/JPG sudah diunduh di perangkat Anda sebelum tiba di venue.",
+              "Datang selambat-lambatnya 15 menit sebelum jam tayang (Pukul 14:45 WIB).",
+              "Tunjukkan barcode tiket digital Anda kepada panitia di meja registrasi Cinepolis Studio 1.",
+              "Pastikan nama dan nomor seat pada tiket digital sesuai.",
+            ].map((text, i) => (
+               <div key={i} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                 <div className="w-8 h-8 rounded-full bg-white/10 text-gray-300 flex items-center justify-center font-bold text-sm shrink-0">
+                   {i+1}
+                 </div>
+                 <p className="text-gray-300 text-sm leading-relaxed">{text}</p>
+               </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-3xl font-display font-semibold mb-6">Rundown Acara</h2>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 px-8 relative overflow-hidden">
+            <div className="absolute left-10 top-8 bottom-8 w-px bg-white/10" />
+            <div className="space-y-8 relative">
+              {[
+                { time: "14:00 - 14:45", title: "Registrasi & Klaim Tiket", desc: "Panitia mencetak presensi kehadiran." },
+                { time: "14:45 - 15:00", title: "Pintu Studio Dibuka", desc: "Penonton mulai memasuki studio 1 sesuai nomor kursi." },
+                { time: "15:00 - 16:30", title: "Penayangan Film", desc: "Pemutaran Children of Heaven (Subtitle ID/EN)." },
+                { time: "16:30 - 17:00", title: "Foto Bersama & Penutupan", desc: "Sesi foto bersama seluruh penonton dan panitia." },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-6 relative">
+                  <div className="w-4 h-4 rounded-full bg-amber-500 ring-4 ring-black mt-1 shrink-0 z-10" />
+                  <div>
+                    <div className="text-sm font-bold text-amber-500 mb-1">{item.time}</div>
+                    <div className="font-semibold text-white mb-1">{item.title}</div>
+                    <div className="text-sm text-gray-400">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
