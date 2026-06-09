@@ -26,11 +26,14 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between h-full">
           
-          {/* LOGO - Teks Cinematix Elite sekarang muncul di HP karena menu sudah pindah ke bawah */}
+          {/* LOGO - Menggunakan gambar asli dari folder public */}
           <Link to="/" className="flex-shrink-0 flex items-center gap-3">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-amber-500 rounded-lg flex items-center justify-center font-bold text-black border border-amber-400">
-               <Ticket className="h-5 w-5 md:h-6 md:w-6" />
-            </div>
+            <img 
+              src="/logo-preview.png" 
+              alt="Logo Cinematix Elite" 
+              className="w-8 h-8 md:w-10 md:h-10 object-contain rounded-md"
+            />
+            {/* Hapus atau komentari span teks di bawah ini JIKA di dalam gambar logo-preview.png kamu sudah ada teks "Cinematix Elite"-nya */}
             <span className="text-xl md:text-2xl font-bold font-display tracking-widest text-white">
               Cinematix <span className="text-amber-500">Elite</span>
             </span>
