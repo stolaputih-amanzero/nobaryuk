@@ -107,33 +107,56 @@ export default function TicketDetail() {
   const downloadPDF = async () => {
     if (!ticketRef.current) return;
     setIsDownloading(true);
+    
+    const node = ticketRef.current;
+    
+    // Simpan pengaturan CSS asli agar tidak merusak tampilan website
+    const originalWidth = node.style.width;
+    const originalHeight = node.style.height;
 
     try {
-      // Kita "memotret" tiket di latar belakang dengan ukuran aslinya (600x900)
-      // tanpa mengubah tampilan yang sedang dilihat user di layar.
-      const imgData = await toPng(ticketRef.current, {
+      // 1. Trik Master: Paksa tiket menjadi lebar 600px dan tinggi OTOMATIS (max-content)
+      // Ini memastikan kotak tiket memanjang ke bawah sampai semua QR & teks muat 100%
+      node.style.width = '600px'; 
+      node.style.height = 'max-content'; 
+      
+      // Beri jeda 50ms agar browser me-render ulang ukuran yang baru sebelum dipotret
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // 2. Catat dimensi aktual SETELAH tiket memanjang menampung semua isinya
+      const actualWidth = node.scrollWidth;
+      const actualHeight = node.scrollHeight; // <-- Kunci utamanya ada di sini
+
+      // 3. Tangkap gambar dengan dimensi penuh yang tidak terpotong
+      const imgData = await toPng(node, { 
         backgroundColor: '#0A0A0A',
-        pixelRatio: 3, // Kualitas HD agar tulisan tajam saat di-zoom/dicetak
-        width: 600,    // Lebar absolut desain tiket
-        height: 900,   // Tinggi absolut desain tiket
+        pixelRatio: 2, 
+        width: actualWidth,
+        height: actualHeight,
         style: {
-          width: '600px',
-          height: '900px',
-          maxWidth: 'none', // Mengabaikan batasan layar sempit di HP
+          width: `${actualWidth}px`,
+          height: `${actualHeight}px`,
+          margin: '0',
           transform: 'none'
         }
       });
       
+      // 4. Kembalikan tampilan layar website ke semula secepat kilat
+      node.style.width = originalWidth;
+      node.style.height = originalHeight;
+
+      // 5. Masukkan gambar utuh ke PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      
-      // Mengikuti rasio 600x900
-      const pdfHeight = (900 * pdfWidth) / 600; 
+      const pdfHeight = (actualHeight * pdfWidth) / actualWidth; 
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Tiket_${ticket.buyerName.replace(/\s+/g, '_')}_Cinepolis.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
+      // Jika error, pastikan tampilan kembali normal
+      node.style.width = originalWidth;
+      node.style.height = originalHeight;
       alert('Gagal membuat PDF. Silahkan coba lagi atau screenshot tiket ini.');
     } finally {
       setIsDownloading(false);
