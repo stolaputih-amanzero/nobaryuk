@@ -108,27 +108,25 @@ export default function TicketDetail() {
     if (!ticketRef.current) return;
     setIsDownloading(true);
     try {
+      // Perbaikan: Paksa ukuran canvas penangkapan gambar konstan di HP maupun Laptop
       const imgData = await toPng(ticketRef.current, { 
         backgroundColor: '#0A0A0A',
-        pixelRatio: 2,
+        pixelRatio: 3, // Meningkatkan ketajaman teks saat dicetak
+        width: 500,    // Paksa lebar standar tiket cetak 
+        height: 800,   // Paksa tinggi standar tiket cetak
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left',
+          width: '500px',
+          height: '800px',
         }
       });
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       
-      const img = new Image();
-      img.src = imgData;
-      
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-
-      const ratio = img.width / img.height;
-      const pdfHeight = pdfWidth / ratio;
+      // Hitung rasio tinggi proporsional berdasarkan resolusi paksaan di atas
+      const pdfHeight = (800 * pdfWidth) / 500; 
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Tiket_${ticket.buyerName.replace(/\s+/g, '_')}_Cinepolis.pdf`);
