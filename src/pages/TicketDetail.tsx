@@ -5,20 +5,17 @@ import { Button } from '@/components/ui/Button';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2, FileText, ExternalLink } from 'lucide-react';
 import { cn } from '@/utils';
-import { supabase } from '../supabaseClient'; // Import Supabase Client
+import { supabase } from '../supabaseClient'; 
 
-// FUNGSI PINTAR UNTUK MENGURUTKAN KURSI (Row A-Z, lalu Angka 1-99)
 const sortSeats = (seats: string[]) => {
   return [...seats].sort((a, b) => {
-    // Memisahkan prefix (contoh: 'RT-') dengan nomor kursi ('E5')
     const partsA = a.split('-');
     const partsB = b.split('-');
     const seatA = partsA.length > 1 ? partsA[1] : a;
     const seatB = partsB.length > 1 ? partsB[1] : b;
 
-    // Menangkap Huruf dan Angka, misal 'E' dan '5'
     const matchA = seatA.match(/([A-Za-z]+)(\d+)/);
     const matchB = seatB.match(/([A-Za-z]+)(\d+)/);
 
@@ -28,11 +25,9 @@ const sortSeats = (seats: string[]) => {
       const rowB = matchB[1];
       const numB = parseInt(matchB[2], 10);
 
-      // Jika barisnya sama (misal sama-sama 'E'), urutkan berdasarkan angkanya
       if (rowA === rowB) {
         return numA - numB; 
       }
-      // Jika barisnya beda (misal 'E' dan 'F'), urutkan sesuai abjad
       return rowA.localeCompare(rowB); 
     }
     return a.localeCompare(b);
@@ -68,7 +63,6 @@ export default function TicketDetail() {
             buyerName: data.buyer_name,
             marketingName: data.marketing_name,
             seatType: data.seat_type,
-            // Kursi diurutkan secara otomatis di sini
             seatNumbers: sortSeats(data.seat_numbers || []),
             paymentMethod: data.payment_method,
             paymentTenor: data.payment_tenor,
@@ -77,7 +71,8 @@ export default function TicketDetail() {
             verified: data.is_verified,
             purchaseDate: data.purchase_date,
             settlementDate: data.settlement_date,
-            paymentProofUrl: null,
+            // PERBAIKAN: Hubungkan data link gambar dari Supabase ke state
+            paymentProofUrl: data.payment_proof_url, 
           });
         }
       } catch (error) {
@@ -192,37 +187,8 @@ export default function TicketDetail() {
     setIsDeleteDialogOpen(true);
   };
 
-  const generateCalendarICS = () => {
-    const eventParams = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'BEGIN:VEVENT',
-      'DTSTART:20260711T043000Z',
-      'DTEND:20260711T080000Z',
-      'SUMMARY:Nonton Bareng: Children of Heaven',
-      'DESCRIPTION:Penayangan eksklusif Nonton Bareng film Children of Heaven (2026) di Cinepolis Senayan Park Jakarta. Harap bawa QR Tiket Anda.\\n\\nID Tiket: ' + ticket.id + '\\nNomor Kursi: ' + ticket.seatNumbers.join(', '),
-      'LOCATION:Cinepolis Senayan Park - Jakarta',
-      'BEGIN:VALARM',
-      'TRIGGER:-PT1440M',
-      'ACTION:DISPLAY',
-      'DESCRIPTION:Reminder H-1 Nonton Bareng Children of Heaven',
-      'END:VALARM',
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].join('\r\n');
-
-    const blob = new Blob([eventParams], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Nonton_Bareng_${ticket.buyerName.replace(/\s+/g, '_')}.ics`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4">
       
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <Link to="/dashboard" className="text-gray-400 hover:text-white flex items-center gap-2 font-medium transition-colors">
@@ -242,9 +208,6 @@ export default function TicketDetail() {
                <CheckCircle className="w-4 h-4 mr-2" /> Tandai Lunas
              </Button>
            )}
-           <Button variant="secondary" onClick={generateCalendarICS} className="whitespace-nowrap">
-             <Clock className="w-4 h-4 mr-2" /> Simpan ke Kalender
-           </Button>
            <Button onClick={downloadPDF} disabled={isDownloading} className="font-bold whitespace-nowrap">
              {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
              {isDownloading ? "Mengunduh..." : "Unduh PDF"}
@@ -352,10 +315,40 @@ export default function TicketDetail() {
         </div>
       </div>
 
+      {/* BLOK TAMPILAN BUKTI PEMBAYARAN */}
       {ticket.paymentProofUrl && (
         <div className="max-w-xl mx-auto mt-6 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center">
           <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest mb-4">Bukti Pembayaran</h3>
-          <img src={ticket.paymentProofUrl} alt="Bukti Pembayaran" className="max-h-[300px] object-contain rounded-lg border border-white/10" />
+          
+          {/* Cek apakah file yang di-upload adalah PDF atau Gambar */}
+          {ticket.paymentProofUrl.toLowerCase().includes('.pdf') ? (
+             <div className="flex flex-col items-center gap-3 py-4">
+               <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30">
+                 <FileText className="w-8 h-8 text-red-500" />
+               </div>
+               <p className="text-gray-400 text-sm">Bukti pembayaran berupa dokumen PDF.</p>
+               <a href={ticket.paymentProofUrl} target="_blank" rel="noopener noreferrer">
+                 <Button variant="outline" className="border-white/10 hover:bg-white/10 text-white mt-2">
+                   Buka File PDF <ExternalLink className="w-4 h-4 ml-2" />
+                 </Button>
+               </a>
+             </div>
+          ) : (
+            <div className="relative group">
+              <img 
+                src={ticket.paymentProofUrl} 
+                alt="Bukti Pembayaran" 
+                className="max-h-[400px] object-contain rounded-lg border border-white/10" 
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                <a href={ticket.paymentProofUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="secondary" className="font-bold">
+                    Buka Gambar Penuh <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       )}
       

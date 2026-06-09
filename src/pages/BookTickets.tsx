@@ -3,20 +3,17 @@ import { useAppContext, PRICING, SeatType } from '../store/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { formatRupiah, cn } from '@/utils';
-import { Check, Upload } from 'lucide-react';
+import { Check, Upload, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../supabaseClient'; // Import Supabase Client
+import { supabase } from '../supabaseClient';
 
-// FUNGSI PINTAR UNTUK MENGURUTKAN KURSI (Row A-Z, lalu Angka 1-99)
 const sortSeats = (seats: string[]) => {
   return [...seats].sort((a, b) => {
-    // Memisahkan prefix (contoh: 'RT-') dengan nomor kursi ('E5')
     const partsA = a.split('-');
     const partsB = b.split('-');
     const seatA = partsA.length > 1 ? partsA[1] : a;
     const seatB = partsB.length > 1 ? partsB[1] : b;
 
-    // Menangkap Huruf dan Angka, misal 'E' dan '5'
     const matchA = seatA.match(/([A-Za-z]+)(\d+)/);
     const matchB = seatB.match(/([A-Za-z]+)(\d+)/);
 
@@ -26,11 +23,9 @@ const sortSeats = (seats: string[]) => {
       const rowB = matchB[1];
       const numB = parseInt(matchB[2], 10);
 
-      // Jika barisnya sama (misal sama-sama 'E'), urutkan berdasarkan angkanya
       if (rowA === rowB) {
         return numA - numB; 
       }
-      // Jika barisnya beda (misal 'E' dan 'F'), urutkan sesuai abjad
       return rowA.localeCompare(rowB); 
     }
     return a.localeCompare(b);
@@ -38,42 +33,17 @@ const sortSeats = (seats: string[]) => {
 };
 
 export default function BookTickets() {
-  const { bookings, addBooking, updateBooking } = useAppContext();
+  const { addBooking, updateBooking } = useAppContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
 
-  // State baru untuk menyimpan data kursi yang benar-benar terpesan di Supabase
   const [dbBookings, setDbBookings] = useState<any[]>([]);
-
-  // Ambil data pesanan langsung dari Supabase untuk memetakan kursi yang tidak tersedia
-  useEffect(() => {
-    const fetchReservedSeats = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('tickets')
-          .select('id, seat_numbers');
-        
-        if (error) throw error;
-
-        if (data) {
-          const formatted = data.map((row: any) => ({
-            id: row.id,
-            seatNumbers: row.seat_numbers || []
-          }));
-          setDbBookings(formatted);
-        }
-      } catch (error) {
-        console.error("Gagal mengambil data kursi terblokir:", error);
-      }
-    };
-
-    fetchReservedSeats();
-  }, []);
-
-  const editBooking = useMemo(() => {
-    return editId ? bookings.find(b => b.id === editId) : null;
-  }, [editId, bookings]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(!!editId); // Loading state untuk edit
+  
+  // State untuk menyimpan URL file lama jika tidak di-update
+  const [existingProofUrl, setExistingProofUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     buyerName: '',
@@ -91,31 +61,71 @@ export default function BookTickets() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [proofFile, setProofFile] = useState<File | null>(null);
 
-  React.useEffect(() => {
-    if (editBooking) {
-      setForm({
-        buyerName: editBooking.buyerName,
-        marketingName: editBooking.marketingName,
-        seatType: editBooking.seatType,
-        paymentMethod: editBooking.paymentMethod,
-        paymentTenor: editBooking.paymentTenor,
-        notes: editBooking.notes,
-        subtitleLanguage: editBooking.subtitleLanguage,
-        verified: editBooking.verified,
-        purchaseDate: editBooking.purchaseDate || new Date().toISOString().split('T')[0],
-        settlementDate: editBooking.settlementDate || '',
-      });
-      setSelectedSeats(editBooking.seatNumbers);
-    }
-  }, [editBooking]);
+  // 1. Tarik Data Ketersediaan Kursi
+  useEffect(() => {
+    const fetchReservedSeats = async () => {
+      try {
+        const { data, error } = await supabase.from('tickets').select('id, seat_numbers');
+        if (error) throw error;
+        if (data) {
+          const formatted = data.map((row: any) => ({
+            id: row.id,
+            seatNumbers: row.seat_numbers || []
+          }));
+          setDbBookings(formatted);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data kursi terblokir:", error);
+      }
+    };
+    fetchReservedSeats();
+  }, []);
+
+  // 2. Tarik Data Spesifik untuk EDIT langsung dari Supabase
+  useEffect(() => {
+    const fetchEditData = async () => {
+      if (!editId) return;
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('id', editId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setForm({
+            buyerName: data.buyer_name || '',
+            marketingName: data.marketing_name || '',
+            seatType: data.seat_type || 'Reguler - Tengah',
+            paymentMethod: data.payment_method || 'Transfer Bank',
+            paymentTenor: data.payment_tenor || 'Lunas',
+            notes: '',
+            subtitleLanguage: data.subtitle_language || 'Indonesia',
+            verified: data.is_verified || false,
+            purchaseDate: data.purchase_date || new Date().toISOString().split('T')[0],
+            settlementDate: data.settlement_date || '',
+          });
+          setSelectedSeats(data.seat_numbers || []);
+          setExistingProofUrl(data.payment_proof_url); // Simpan URL lama
+        }
+      } catch (error) {
+        console.error("Gagal menarik data edit:", error);
+        alert("Gagal memuat data tiket untuk diedit.");
+      } finally {
+        setIsLoadingEdit(false);
+      }
+    };
+
+    fetchEditData();
+  }, [editId]);
   
-  // PERBAIKAN: Hitung ketersediaan kursi berdasarkan database Supabase (dbBookings)
   const unavailableSeats = useMemo(() => {
     const set = new Set<string>();
     dbBookings.forEach(b => {
-      // Jika sedang mengedit, jangan blokir kursi milik tiket itu sendiri
       if (editId && b.id === editId) return;
-      b.seatNumbers.forEach(s => set.add(s));
+      b.seatNumbers.forEach((s: string) => set.add(s));
     });
     return set;
   }, [dbBookings, editId]);
@@ -150,62 +160,84 @@ export default function BookTickets() {
     e.preventDefault();
     if (selectedSeats.length === 0) return alert("Pilih minimal 1 kursi!");
     
-    let paymentProofUrl = editBooking?.paymentProofUrl;
-    if (proofFile) {
-       paymentProofUrl = URL.createObjectURL(proofFile); 
-    }
-    
-    // PERBAIKAN: Urutkan kursi sebelum dikirim ke database
-    const sortedSeats = sortSeats(selectedSeats);
+    setIsSubmitting(true); 
 
-    const ticketData = {
-      buyer_name: form.buyerName,
-      marketing_name: form.marketingName,
-      seat_type: form.seatType,
-      seat_numbers: sortedSeats, // Gunakan array yang sudah terurut
-      payment_method: form.paymentMethod,
-      payment_tenor: form.paymentTenor,
-      subtitle_language: form.subtitleLanguage,
-      total_price: totalPrice,
-      is_verified: form.verified,
-      is_checked_in: false,
-      purchase_date: form.purchaseDate,
-      settlement_date: form.settlementDate === '' ? null : form.settlementDate,
-    };
+    try {
+      let finalPaymentProofUrl = existingProofUrl; // Default ke file lama (jika ada)
 
-    if (editBooking) {
-      const { error } = await supabase.from('tickets').update(ticketData).eq('id', editBooking.id);
-      if (error) {
-        console.error(error);
-        return alert("Gagal mengupdate tiket di database!");
+      if (proofFile) {
+        const fileExt = proofFile.name.split('.').pop();
+        const fileName = `proof-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('payment_proofs')
+          .upload(fileName, proofFile);
+
+        if (uploadError) {
+          console.error("Gagal upload file:", uploadError);
+          alert("Gagal mengunggah foto. Pastikan internet stabil dan file di bawah 2MB.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('payment_proofs')
+          .getPublicUrl(fileName);
+
+        finalPaymentProofUrl = publicUrlData.publicUrl;
       }
+      
+      const sortedSeats = sortSeats(selectedSeats);
 
-      updateBooking(editBooking.id, {
-        ...form,
-        seatNumbers: sortedSeats,
-        totalPrice,
-        totalCost,
-        paymentProofUrl,
-      });
-      navigate(`/ticket/${editBooking.id}`);
-    } else {
-      const { data, error } = await supabase.from('tickets').insert([ticketData]).select();
-      if (error) {
-        console.error(error);
-        return alert("Gagal menyimpan tiket ke database Supabase!");
-      }
+      const ticketData = {
+        buyer_name: form.buyerName,
+        marketing_name: form.marketingName,
+        seat_type: form.seatType,
+        seat_numbers: sortedSeats,
+        payment_method: form.paymentMethod,
+        payment_tenor: form.paymentTenor,
+        subtitle_language: form.subtitleLanguage,
+        total_price: totalPrice,
+        is_verified: form.verified,
+        is_checked_in: false,
+        purchase_date: form.purchaseDate,
+        settlement_date: form.settlementDate === '' ? null : form.settlementDate,
+        payment_proof_url: finalPaymentProofUrl, 
+      };
 
-      if (data && data.length > 0) {
-        addBooking({
+      if (editId) {
+        const { error } = await supabase.from('tickets').update(ticketData).eq('id', editId);
+        if (error) throw error;
+
+        updateBooking(editId, {
           ...form,
-          id: data[0].id,
           seatNumbers: sortedSeats,
           totalPrice,
           totalCost,
-          paymentProofUrl,
+          paymentProofUrl: finalPaymentProofUrl,
         });
-        navigate('/dashboard');
+        navigate(`/ticket/${editId}`);
+      } else {
+        const { data, error } = await supabase.from('tickets').insert([ticketData]).select();
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          addBooking({
+            ...form,
+            id: data[0].id,
+            seatNumbers: sortedSeats,
+            totalPrice,
+            totalCost,
+            paymentProofUrl: finalPaymentProofUrl,
+          });
+          navigate('/dashboard');
+        }
       }
+    } catch (error) {
+      console.error("Error submitting ticket:", error);
+      alert("Terjadi kesalahan sistem saat menyimpan tiket.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -214,14 +246,23 @@ export default function BookTickets() {
     setSelectedSeats([]); 
   };
 
+  if (isLoadingEdit) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-amber-500 gap-4">
+         <Loader2 className="w-10 h-10 animate-spin" />
+         <p className="text-gray-400 font-medium tracking-wider animate-pulse">Memuat data tiket...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in slide-in-from-bottom flex flex-col lg:flex-row gap-8">
       
       {/* Form Sidebar */}
       <div className="w-full lg:w-1/3 shrink-0 order-2 lg:order-1 space-y-6">
         <div>
-          <h1 className="text-3xl font-display font-bold mb-2">{editBooking ? "Edit Tiket" : "Form Data Tiket"}</h1>
-          <p className="text-gray-400">{editBooking ? "Update detail dan pemilihan kursi untuk tiket ini." : "Masukan data diri donatur atau pembeli tiket dengan lengkap."}</p>
+          <h1 className="text-3xl font-display font-bold mb-2">{editId ? "Edit Tiket" : "Form Data Tiket"}</h1>
+          <p className="text-gray-400">{editId ? "Update detail dan pemilihan kursi untuk tiket ini." : "Masukan data diri donatur atau pembeli tiket dengan lengkap."}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -331,6 +372,16 @@ export default function BookTickets() {
                           <p className="text-[10px] text-gray-500 mt-1">{(proofFile.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                       </>
+                    ) : existingProofUrl ? (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
+                          <Check className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-400 font-medium">File sudah terunggah</p>
+                          <p className="text-[10px] text-gray-500 mt-1">Timpa dengan file baru jika perlu</p>
+                        </div>
+                      </>
                     ) : (
                       <>
                         <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-amber-500/10 group-hover:text-amber-500 transition-colors">
@@ -362,8 +413,12 @@ export default function BookTickets() {
             </CardContent>
           </Card>
 
-          <Button type="submit" className="w-full h-14 text-lg font-bold">
-            {editBooking ? "Simpan Perubahan" : "Konfirmasi Pesanan"} - {formatRupiah(totalPrice)}
+          <Button type="submit" disabled={isSubmitting} className="w-full h-14 text-lg font-bold">
+            {isSubmitting ? (
+              <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Mengunggah...</>
+            ) : (
+              <>{editId ? "Simpan Perubahan" : "Konfirmasi Pesanan"} - {formatRupiah(totalPrice)}</>
+            )}
           </Button>
         </form>
       </div>
