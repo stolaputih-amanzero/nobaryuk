@@ -165,7 +165,7 @@ export default function HomePage() {
             {[
               "Pastikan barcode tiket PDF/JPG sudah diunduh di perangkat Anda sebelum tiba di venue.",
               "Datang selambat-lambatnya 15 menit sebelum jam tayang (Pukul 11:15 WIB).",
-              "Tunjukkan barcode tiket digital Anda kepada panitia di meja registrasi Cinepolis Studio 1.",
+              "Tunjukkan barcode tiket digital Anda kepada panitia di meja registrasi Cinepolis Cinema 1.",
               "Pastikan nama dan nomor seat pada tiket digital sesuai.",
             ].map((text, i) => (
                <div key={i} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -186,7 +186,7 @@ export default function HomePage() {
               {[
                 { time: "11:30 - 13:00", title: "Registrasi & Klaim Tiket", desc: "Klaim tiket fisik dan pembagian Nobar Snack Pack." },
                 { time: "12:00 - 13:00", title: "Makan Siang Buffet", desc: "Khusus untuk tamu dengan tiket VIP." },
-                { time: "13:00 - 13:30", title: "Pintu Studio Dibuka & Seremoni", desc: "Penonton memasuki Cinema 1, penayangan video sponsor, seremoni pembukaan, dan sesi foto bersama." },
+                { time: "13:00 - 13:30", title: "Pintu Cinema Dibuka & Seremoni", desc: "Penonton memasuki Cinema 1, penayangan video sponsor, seremoni pembukaan, dan sesi foto bersama." },
                 { time: "13:30 - 15:00", title: "Penayangan Film & Penutupan", desc: "Pemutaran Children of Heaven (Subtitle ID), penutupan dan ucapan terimakasih." },
               ].map((item, i) => (
                 <div key={i} className="flex gap-6 relative">
