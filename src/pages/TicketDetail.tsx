@@ -107,48 +107,33 @@ export default function TicketDetail() {
   const downloadPDF = async () => {
     if (!ticketRef.current) return;
     setIsDownloading(true);
-    
-    const node = ticketRef.current;
-
-    // 1. Simpan ukuran asli layar HP pembaca saat ini
-    const originalWidth = node.style.width;
-    const originalHeight = node.style.height;
 
     try {
-      // 2. Paksa ukuran ke standar rasio emas tiket desktop (Widescreen)
-      node.style.width = '550px';
-      node.style.height = '850px';
-
-      // 3. Ambil gambar dengan resolusi canvas yang sudah dikunci di atas
-      const imgData = await toPng(node, { 
+      // Kita "memotret" tiket di latar belakang dengan ukuran aslinya (600x900)
+      // tanpa mengubah tampilan yang sedang dilihat user di layar.
+      const imgData = await toPng(ticketRef.current, {
         backgroundColor: '#0A0A0A',
-        pixelRatio: 3, // Membuat teks sangat tajam saat di-zoom/dicetak
-        width: 550,
-        height: 850,
+        pixelRatio: 3, // Kualitas HD agar tulisan tajam saat di-zoom/dicetak
+        width: 600,    // Lebar absolut desain tiket
+        height: 900,   // Tinggi absolut desain tiket
         style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-          width: '550px',
-          height: '850px',
+          width: '600px',
+          height: '900px',
+          maxWidth: 'none', // Mengabaikan batasan layar sempit di HP
+          transform: 'none'
         }
       });
       
-      // 4. Kembalikan ukuran tampilan layar HP ke semula secara INSTAN (User tidak akan melihat kedipan)
-      node.style.width = originalWidth;
-      node.style.height = originalHeight;
-
-      // 5. Masukkan gambar utuh ke dalam format kertas A4 PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (850 * pdfWidth) / 550; // Hitung tinggi proporsional rasio
+      
+      // Mengikuti rasio 600x900
+      const pdfHeight = (900 * pdfWidth) / 600; 
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Tiket_${ticket.buyerName.replace(/\s+/g, '_')}_Cinepolis.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      // Jika sistem gagal, pastikan tampilan HP dikembalikan ke normal agar tidak merusak UI
-      node.style.width = originalWidth;
-      node.style.height = originalHeight;
       alert('Gagal membuat PDF. Silahkan coba lagi atau screenshot tiket ini.');
     } finally {
       setIsDownloading(false);
