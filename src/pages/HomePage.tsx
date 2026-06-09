@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Link } from 'react-router-dom';
 import { differenceInSeconds } from 'date-fns';
-import { supabase } from '../supabaseClient'; // Import Supabase Client
+import { supabase } from '../supabaseClient'; 
 
-// Buat tipe data untuk film agar TypeScript tidak error
 interface Movie {
   title: string;
   synopsis: string;
@@ -14,7 +13,6 @@ interface Movie {
 }
 
 export default function HomePage() {
-  // Waktu tayang sudah diupdate menjadi 11:30 WIB
   const showTime = new Date('2026-07-11T11:30:00+07:00');
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
   
@@ -57,8 +55,9 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 pb-12 animate-in fade-in zoom-in-95 duration-500">
+      
       {/* Hero Section */}
-      <section className="relative rounded-2xl overflow-hidden border border-white/10 bg-white/5 h-[400px]">
+      <section className="relative rounded-2xl overflow-hidden border border-white/10 bg-white/5 min-h-[400px]">
         <div className="absolute inset-0 bg-black">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-[#0A0A0A]/80 to-transparent z-10" />
           <img 
@@ -68,17 +67,23 @@ export default function HomePage() {
           />
         </div>
         
-        <div className="relative z-20 px-8 py-16 md:px-12 flex flex-col justify-end h-full">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider mb-6 w-max">
+        {/* PERBAIKAN: Menambahkan pt-20 di HP agar teks turun dan tidak terpotong ke atas */}
+        <div className="relative z-20 px-6 py-12 pt-24 md:pt-16 md:px-12 flex flex-col justify-end h-full min-h-[400px]">
+          
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider mb-4 md:mb-6 w-max">
             <Film className="w-4 h-4" />
             <span>Nonton Bareng Event 2026</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-2 md:mb-4 leading-tight break-words">
-            Children of Heaven <span className="text-2xl md:text-4xl text-gray-500 font-normal">(2026)</span>
+          
+          {/* PERBAIKAN: Menurunkan ukuran font di HP (text-4xl) agar tidak memicu pemotongan baris (clipping) */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-3 md:mb-4 leading-tight break-words">
+            Children of Heaven <span className="text-2xl md:text-4xl text-gray-500 font-normal whitespace-nowrap">(2026)</span>
           </h1>
-          <p className="text-sm md:text-base text-gray-400 max-w-2xl mb-8">
+          
+          <p className="text-sm md:text-base text-gray-400 max-w-2xl mb-6 md:mb-8">
             {movie ? movie.synopsis : "Memuat sinopsis film dari database..."}
           </p>
+          
           <div className="flex flex-wrap gap-3">
             <Link to="/book">
               <Button className="h-10 px-8 text-xs rounded-full bg-amber-500 text-black">
@@ -103,16 +108,16 @@ export default function HomePage() {
               <Clock className="text-amber-500" /> Countdown to Premiere
             </h3>
             {timeLeft ? (
-              <div className="grid grid-cols-4 gap-4 text-center">
+              <div className="grid grid-cols-4 gap-2 md:gap-4 text-center">
                 {[
                   { label: "Hari", value: timeLeft.d },
                   { label: "Jam", value: timeLeft.h },
                   { label: "Menit", value: timeLeft.m },
                   { label: "Detik", value: timeLeft.s },
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-black/50 border border-white/10 rounded-xl p-4 md:p-6 backdrop-blur-sm">
-                    <div className="text-3xl md:text-5xl font-bold text-amber-500 font-display mb-2">{item.value.toString().padStart(2, '0')}</div>
-                    <div className="text-xs md:text-sm text-gray-400 font-medium uppercase tracking-wider">{item.label}</div>
+                  <div key={idx} className="bg-black/50 border border-white/10 rounded-xl p-3 md:p-6 backdrop-blur-sm">
+                    <div className="text-2xl md:text-5xl font-bold text-amber-500 font-display mb-1 md:mb-2">{item.value.toString().padStart(2, '0')}</div>
+                    <div className="text-[10px] md:text-sm text-gray-400 font-medium uppercase tracking-wider">{item.label}</div>
                   </div>
                 ))}
               </div>
@@ -133,7 +138,6 @@ export default function HomePage() {
             <div>
               <div className="text-sm text-gray-400 font-medium mb-1">Waktu</div>
               <div className="text-lg font-semibold text-white flex items-center gap-2">
-                {/* Waktu sudah disesuaikan menjadi 11:30 WIB */}
                 <Clock className="w-5 h-5 text-amber-500" /> 11:30 WIB
               </div>
             </div>
@@ -179,7 +183,6 @@ export default function HomePage() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 px-8 relative overflow-hidden">
             <div className="absolute left-10 top-8 bottom-8 w-px bg-white/10" />
             <div className="space-y-8 relative">
-              {/* Rundown acara yang baru dan padat */}
               {[
                 { time: "11:30 - 13:00", title: "Registrasi & Klaim Tiket", desc: "Klaim tiket fisik dan pembagian Nobar Snack Pack." },
                 { time: "12:00 - 13:00", title: "Makan Siang Buffet", desc: "Khusus untuk tamu dengan tiket VIP." },
