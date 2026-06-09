@@ -145,7 +145,7 @@ export default function HomePage() {
               <div className="text-sm text-gray-400 font-medium mb-1">Lokasi Venue</div>
               <div className="text-lg font-semibold text-white flex items-start gap-2">
                 <MapPin className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" /> 
-                <span>Cinema 1 Cinepolis<br/><span className="text-sm text-gray-400">Senayan Park, Jakarta</span></span>
+                <span>Cinema 1 Cinepolis<br/><span className="text-sm text-gray-400">1st Floor -Senayan Park, Jakarta</span></span>
               </div>
             </div>
           </CardContent>
