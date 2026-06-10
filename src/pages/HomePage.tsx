@@ -61,9 +61,9 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black">
           <div className="absolute inset-0 bg-gradient-to-t from-black via-[#0A0A0A]/80 to-transparent z-10" />
           <img 
-            src={movie?.poster_url || "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80&w=2000"} 
+            src="/background.png" 
             alt={movie?.title || "Cinema Hero"} 
-            className="w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-700"
+            className="w-full h-full object-cover opacity-100 grayscale hover:grayscale-0 transition-all duration-700"
           />
         </div>
         
