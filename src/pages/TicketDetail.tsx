@@ -194,6 +194,9 @@ Terlampir adalah dokumen PDF yang berisi e-Ticket Anda (pada halaman pertama) da
 
 Mohon untuk menyimpan dokumen ini dan menyiapkan QR Code di halaman pertama saat proses registrasi kehadiran di lokasi.
 
+_Jumlah Tiket:_
+*${ticket.seatNumbers.length} Tiket*
+
 _Detail Kursi:_
 *${ticket.seatNumbers.join(', ')}*
 
@@ -202,6 +205,7 @@ _Waktu:_
 
 _Tempat:_
 *Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta*
+
 
 Kami sangat menantikan kehadiran Anda. Terima kasih atas kepercayaan dan kontribusi mulia yang telah diberikan.
 
@@ -338,9 +342,17 @@ Salam hormat,
                    <div className="text-xs text-gray-400 uppercase font-bold mb-1">Lokasi Studio</div>
                    <div className="font-semibold text-white flex items-center gap-2">
                      <MapPin className="w-4 h-4 text-amber-500" /> 
-                     Cinema 1, Cinepolis Senayan Park Jakarta
+                     Cinema 1, Lt.1Cinepolis Senayan Park Jakarta
                    </div>
                 </div>
+                {/* --- TAMBAHAN BARU: JUMLAH TIKET --- */}
+                <div className="col-span-2 pt-5 mt-2 border-t border-white/10 flex items-center justify-between">
+                   <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Total Tiket</div>
+                   <div className="font-bold text-3xl text-amber-500">
+                     {ticket.seatNumbers.length} <span className="text-sm font-normal text-white tracking-widest ml-1">TIKET</span>
+                   </div>
+                </div>
+                {/* ---------------------------------- */}
              </div>
            </div>
 
