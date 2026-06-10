@@ -449,7 +449,7 @@ Salam hormat,
             <img 
               src={backgroundImage} 
               alt="Premium Background" 
-              className="w-full h-full object-cover opacity-80 grayscale"
+              className="w-full h-full object-cover opacity-100 grayscale"
             />
             {/* Gradien yang sangat gelap agar teks putih kontras & terbaca jelas */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/80 to-black/95" />
