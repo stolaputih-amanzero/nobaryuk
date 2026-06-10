@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2, FileText, ExternalLink } from 'lucide-react';
@@ -332,11 +332,13 @@ export default function TicketDetail() {
              </div>
 
              <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
-               <QRCodeCanvas 
+               <QRCodeSVG 
                  value={ticket.id}
-                 size={200}
-                 level="M"
+                 size={240}
+                 level="H"
                  includeMargin={true}
+                 bgColor={"#FFFFFF"}
+                 fgColor={"#000000"}
                />
              </div>
 
