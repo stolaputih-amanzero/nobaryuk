@@ -194,9 +194,14 @@ Terlampir adalah dokumen PDF yang berisi e-Ticket Anda (pada halaman pertama) da
 
 Mohon untuk menyimpan dokumen ini dan menyiapkan QR Code di halaman pertama saat proses registrasi kehadiran di lokasi.
 
-*Detail Kursi:* ${ticket.seatNumbers.join(', ')}
-*Waktu:* Sabtu, 11 Juli 2026 | 12:00 WIB
-*Tempat:* Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta
+*Detail Kursi:* 
+${ticket.seatNumbers.join(', ')}
+
+*Waktu:* 
+Sabtu, 11 Juli 2026 | 12:00 WIB
+
+*Tempat:* 
+Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta
 
 Kami sangat menantikan kehadiran Anda. Terima kasih atas kepercayaan dan kontribusi mulia yang telah diberikan.
 
