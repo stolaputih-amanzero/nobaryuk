@@ -342,7 +342,7 @@ Salam hormat,
                    <div className="text-xs text-gray-400 uppercase font-bold mb-1">Lokasi Studio</div>
                    <div className="font-semibold text-white flex items-center gap-2">
                      <MapPin className="w-4 h-4 text-amber-500" /> 
-                     Cinema 1, Lt.1Cinepolis Senayan Park Jakarta
+                     Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta
                    </div>
                 </div>
                 {/* --- TAMBAHAN BARU: JUMLAH TIKET --- */}
