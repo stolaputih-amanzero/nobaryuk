@@ -336,7 +336,7 @@ export default function TicketDetail() {
                 // Mengubah ID mentah menjadi Link URL dinamis sesuai domain website Anda
                 value={`${window.location.origin}/checkin/${ticket.id}`}
                 size={240}          
-                level="H"           
+                level="M"           
                 includeMargin={true}
                 bgColor={"#FFFFFF"} 
                 fgColor={"#000000"} 
