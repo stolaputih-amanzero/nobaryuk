@@ -38,6 +38,7 @@ export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const ticketRef = useRef<HTMLDivElement>(null);
+  const appreciationRef = useRef<HTMLDivElement>(null);
   
   const [ticket, setTicket] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -504,6 +505,69 @@ Salam hormat,
           </div>
         </div>
       )}
-    </div>
+
+      {/* 
+        ==================================================================
+        HALAMAN 2 PDF (APRESIASI VIP) - DISEMBUNYIKAN DARI LAYAR WEBSITE 
+        ==================================================================
+      */}
+      <div className="fixed left-[-9999px] top-0 pointer-events-none">
+        <div 
+          ref={appreciationRef}
+          className="relative w-[600px] h-[846px] bg-[#0A0A0A] p-10 flex flex-col items-center justify-center overflow-hidden"
+          style={{ fontFamily: 'var(--font-sans)' }}
+        >
+          {/* Background Sama Persis Dengan Tiket */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={backgroundImage} 
+              alt="Premium Background" 
+              className="w-full h-full object-cover opacity-20 grayscale"
+            />
+            {/* Gradien yang sangat gelap agar teks putih kontras & terbaca jelas */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/80 to-black/95" />
+          </div>
+
+          {/* Konten & Bingkai VIP */}
+          <div className="relative z-10 w-full h-full border-[3px] border-amber-500 p-2 rounded-sm shadow-[0_0_50px_rgba(245,158,11,0.15)]">
+            <div className="border border-white/20 h-full p-12 flex flex-col items-center justify-center text-center">
+              
+              <h3 className="text-white text-base tracking-[0.4em] font-bold mb-10 uppercase">
+                Cine<span className="text-amber-500">matix</span> <span className="text-gray-500 font-normal text-sm">ELITE</span>
+              </h3>
+              
+              <h1 className="text-4xl text-amber-500 font-bold tracking-[0.2em] mb-6">
+                APRESIASI EKSKLUSIF
+              </h1>
+              
+              <div className="w-24 h-px bg-white/20 mb-10" />
+              
+              <p className="text-gray-400 text-xs tracking-[0.2em] uppercase mb-4">
+                Diberikan dengan penuh kehormatan kepada:
+              </p>
+              
+              <h2 className="text-4xl text-white italic font-serif mb-12 px-4 leading-tight">
+                {ticket.buyerName}
+              </h2>
+              
+              <p className="text-gray-300 text-lg leading-[1.8] mb-16 max-w-sm">
+                Kami menyampaikan penghargaan setinggi-tingginya atas partisipasi dan dedikasi Anda. Kontribusi Anda tidak hanya menyempurnakan malam penayangan ini, tetapi juga mewujudkan dampak nyata bagi inisiatif amal yang kita bangun bersama.
+                <br/><br/>
+                Selamat menikmati persembahan sinematik eksklusif dari kami.
+              </p>
+
+              <div className="mt-auto">
+                <p className="text-amber-500 font-bold tracking-widest uppercase text-sm border-t border-amber-500/30 pt-4">
+                  Cinematix 2026 Committee
+                </p>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* ======================= AKHIR HALAMAN 2 ======================= */}
+
+    </div> // INI ADALAH DIV PENUTUP UTAMA COMPONENT ANDA
   );
 }
