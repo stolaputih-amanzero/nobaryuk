@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2, FileText, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2, FileText, ExternalLink, MessageCircle } from 'lucide-react';
 import { cn } from '@/utils';
 import { supabase } from '../supabaseClient'; 
 
@@ -110,55 +110,112 @@ export default function TicketDetail() {
     const node = ticketRef.current;
     const parentNode = node.parentElement;
     
-    // Simpan pengaturan asli halaman web
+    // Simpan pengaturan asli
     const originalWidth = node.style.width;
     const originalHeight = node.style.height;
     const originalParentOverflow = parentNode ? parentNode.style.overflow : '';
 
     try {
-      // 1. Paksa tinggi menjadi auto agar memanjang sesuai konten asli (menimpa inline style JSX)
       node.style.setProperty('width', '600px', 'important'); 
       node.style.setProperty('height', 'auto', 'important'); 
       if (parentNode) {
         parentNode.style.setProperty('overflow', 'visible', 'important');
       }
       
-      // Beri jeda 250ms agar QR Code selesai dirender sempurna oleh browser
       await new Promise(resolve => setTimeout(resolve, 250));
 
       const actualWidth = 600;
       const actualHeight = node.offsetHeight; 
 
-      // 2. Ambil snapshot gambar tiket secara utuh
+      // 1. Snapshot Tiket
       const imgData = await toPng(node, { 
         backgroundColor: '#0A0A0A',
         pixelRatio: 2, 
         width: actualWidth,
         height: actualHeight,
-        style: {
-          width: `${actualWidth}px`,
-          height: `${actualHeight}px`,
-          margin: '0',
-          transform: 'none'
-        }
+        style: { width: `${actualWidth}px`, height: `${actualHeight}px`, margin: '0', transform: 'none' }
       });
       
-      // Kembalikan tampilan website ke kondisi semula
       node.style.width = originalWidth;
       node.style.height = originalHeight;
       if (parentNode) {
         parentNode.style.overflow = originalParentOverflow;
       }
 
-      // 3. SOLUSI UTAMA: Buat halaman PDF mengikuti ukuran asli gambar (Bukan A4)
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [actualWidth, actualHeight] // PDF akan memanjang ke bawah mengikuti tiket
-      });
+      // Inisialisasi PDF
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [actualWidth, actualHeight] });
       
+      // --- HALAMAN 1: TIKET DIGITAL ---
       pdf.addImage(imgData, 'PNG', 0, 0, actualWidth, actualHeight);
-      pdf.save(`Tiket_${ticket.buyerName.replace(/\s+/g, '_')}_Cinepolis.pdf`);
+
+      // --- HALAMAN 2: APRESIASI EKSKLUSIF (SUPER PREMIUM) ---
+      const page2Height = actualWidth * 1.41; // Format A4 Proporsional
+      pdf.addPage([actualWidth, page2Height], 'p');
+      
+      // Background Hitam Peat
+      pdf.setFillColor(10, 10, 10);
+      pdf.rect(0, 0, actualWidth, page2Height, 'F');
+
+      // BINGKAI EMAS LUAR (Outer Gold Frame)
+      pdf.setDrawColor(245, 158, 11); // Warna Amber
+      pdf.setLineWidth(3);
+      pdf.rect(30, 30, actualWidth - 60, page2Height - 60);
+
+      // BINGKAI PUTIH DALAM (Inner Fine Frame)
+      pdf.setDrawColor(255, 255, 255);
+      pdf.setLineWidth(0.5);
+      // Warna garis putih dengan efek transparansi (abu-abu gelap)
+      pdf.setDrawColor(80, 80, 80); 
+      pdf.rect(40, 40, actualWidth - 80, page2Height - 80);
+
+      // TEKS LOGO HEADER: CINEMATIX ELITE
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(20);
+      // Efek Spacing Lebar (Tracking) disimulasikan
+      pdf.text('C I N E M A T I X   E L I T E', actualWidth / 2, 110, { align: 'center' });
+
+      // JUDUL UTAMA
+      pdf.setTextColor(245, 158, 11); // Warna Amber
+      pdf.setFontSize(34);
+      pdf.text('APRESIASI EKSKLUSIF', actualWidth / 2, 190, { align: 'center' });
+
+      // GARIS PEMISAH BAWAH JUDUL
+      pdf.setDrawColor(245, 158, 11);
+      pdf.setLineWidth(1);
+      pdf.line(actualWidth / 2 - 80, 220, actualWidth / 2 + 80, 220);
+
+      // SUB-TITLE
+      pdf.setTextColor(150, 150, 150);
+      pdf.setFont('Helvetica', 'normal');
+      pdf.setFontSize(14);
+      pdf.text('D I B E R I K A N   D E N G A N   P E N U H   K E H O R M A T A N   K E P A D A :', actualWidth / 2, 270, { align: 'center' });
+
+      // NAMA PEMBELI / DONATUR (VIP)
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(30);
+      pdf.text(ticket.buyerName.toUpperCase(), actualWidth / 2, 320, { align: 'center' });
+
+      // ISI SURAT (Eksklusif & Formal)
+      pdf.setFont('Helvetica', 'normal');
+      pdf.setFontSize(16);
+      pdf.setTextColor(200, 200, 200); 
+      
+      const message = "Kami menyampaikan penghargaan setinggi-tingginya atas partisipasi dan dedikasi Anda. Kontribusi Anda tidak hanya menyempurnakan malam penayangan ini, tetapi juga mewujudkan dampak nyata bagi inisiatif fundraising yang kita bangun bersama.\n\nSelamat menikmati persembahan sinematik eksklusif dari kami.";
+      
+      const splitText = pdf.splitTextToSize(message, actualWidth - 160);
+      // lineHeightFactor memberikan jarak spasi yang mewah (1.8)
+      pdf.text(splitText, actualWidth / 2, 400, { align: 'center', lineHeightFactor: 1.8 });
+
+      // FOOTER / SIGNATURE
+      pdf.setTextColor(245, 158, 11); // Warna Amber
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(16);
+      pdf.text('GPI CINEMATIX 2026 COMMITTEE', actualWidth / 2, 600, { align: 'center' });
+
+      // --- SIMPAN FILE ---
+      pdf.save(`Tiket_VIP_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
       node.style.width = originalWidth;
@@ -170,6 +227,34 @@ export default function TicketDetail() {
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  const sendWhatsApp = () => {
+    // 1. Susun pesan menggunakan data dinamis dari tiket
+    const waText = `Yang kami kasihi *${ticket.buyerName}*,
+
+Salam hangat dari tim GPI Cinematix 2026.
+
+Melalui pesan ini, kami menginformasikan bahwa pembayaran Anda telah berhasil kami verifikasi. Kami sangat mengapresiasi dan berterima kasih atas donasi serta dukungan yang diberikan untuk menyukseskan acara Nonton Bareng GPI 2026.
+
+Terlampir adalah dokumen PDF yang berisi e-Ticket Anda (pada halaman pertama) dan surat apresiasi dari kepanitiaan kami (pada halaman kedua).
+
+Mohon untuk menyimpan dokumen ini dan menyiapkan QR Code di halaman pertama saat proses registrasi kehadiran di lokasi.
+
+*Detail Kursi:* ${ticket.seatNumbers.join(', ')}
+*Waktu:* Sabtu, 11 Juli 2026 | 12:00 WIB
+*Tempat:* Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta
+
+Kami sangat menantikan kehadiran Anda. Terima kasih atas kepercayaan dan kontribusi mulia yang telah diberikan.
+
+Salam hormat,
+*GPI Cinematix 2026 Committee*`;
+
+    // 2. Ubah teks menjadi format URL yang dipahami oleh WhatsApp
+    const encodedText = encodeURIComponent(waText);
+
+    // 3. Buka tab baru menuju WhatsApp (Akan otomatis membuka WA Web atau Aplikasi WA di HP)
+    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
   };
 
   const verifyTicket = async () => {
@@ -244,6 +329,11 @@ export default function TicketDetail() {
            <Button onClick={downloadPDF} disabled={isDownloading} className="font-bold whitespace-nowrap bg-amber-500 text-black hover:bg-amber-600">
              {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
              {isDownloading ? "Mengunduh..." : "Unduh PDF"}
+           </Button>
+
+           {/* --- TOMBOL WHATSAPP BARU --- */}
+           <Button onClick={sendWhatsApp} className="font-bold whitespace-nowrap bg-green-500 text-white hover:bg-green-600 border-none">
+             <MessageCircle className="w-4 h-4 mr-2" /> Buat Pesan WA
            </Button>
         </div>
       </div>
