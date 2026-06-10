@@ -529,12 +529,7 @@ const downloadAttendancePDF = () => {
                 </div>
               </div>
 
-              {/* Screen Divider */}
-              <div className="w-full border-t-[4px] border-white/10 mb-10 relative flex justify-center">
-                <span className="absolute -top-3 text-[10px] bg-black px-4 font-bold text-gray-500 tracking-[0.3em] uppercase">S c r e e n</span>
-                <div className="absolute top-0 w-1/2 h-24 bg-gradient-to-b from-white/5 to-transparent blur-xl pointer-events-none" />
-              </div>
-
+              {/* Seat Grid - Posisinya Dinaikkan Ke Atas */}
               <div className="flex flex-col gap-8">
                 {(Object.keys(PRICING) as SeatType[]).map(type => {
                   const currentTypeInfo = PRICING[type];
@@ -576,6 +571,12 @@ const downloadAttendancePDF = () => {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Screen Divider - Posisinya Diturunkan Ke Bawah */}
+              <div className="w-full border-t-[4px] border-white/10 mt-10 relative flex justify-center">
+                <span className="absolute -top-3 text-[10px] bg-[#111111] px-4 font-bold text-gray-500 tracking-[0.3em] uppercase">S c r e e n</span>
+                <div className="absolute bottom-0 w-1/2 h-24 bg-gradient-to-t from-white/5 to-transparent blur-xl pointer-events-none" />
               </div>
 
             </CardContent>

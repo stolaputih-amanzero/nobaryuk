@@ -447,13 +447,7 @@ export default function BookTickets() {
               ))}
             </div>
 
-            {/* Screen Divider */}
-            <div className="w-full border-t-[8px] border-amber-500/20 mb-12 relative flex justify-center">
-              <span className="absolute -top-6 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
-              <div className="absolute top-0 w-3/4 h-32 bg-gradient-to-b from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
-            </div>
-
-            {/* Seat Grid */}
+            {/* Seat Grid DIPINDAHKAN KE ATAS */}
             <div className="flex flex-col items-center justify-center gap-3 w-full">
               {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                 const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
@@ -488,6 +482,12 @@ export default function BookTickets() {
                 </div>
                 );
               })}
+            </div>
+
+            {/* Screen Divider DIPINDAHKAN KE BAWAH */}
+            <div className="w-full border-t-[8px] border-amber-500/20 mt-12 relative flex justify-center">
+              <span className="absolute -top-3 bg-[#111111] px-4 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
+              <div className="absolute bottom-0 w-3/4 h-32 bg-gradient-to-t from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
             </div>
 
             {/* Legend & Summary */}
