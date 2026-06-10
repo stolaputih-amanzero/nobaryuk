@@ -71,7 +71,6 @@ export default function TicketDetail() {
             verified: data.is_verified,
             purchaseDate: data.purchase_date,
             settlementDate: data.settlement_date,
-            // PERBAIKAN: Hubungkan data link gambar dari Supabase ke state
             paymentProofUrl: data.payment_proof_url, 
           });
         }
@@ -116,7 +115,6 @@ export default function TicketDetail() {
 
     try {
       // 1. Trik Master: Paksa tiket menjadi lebar 600px dan tinggi OTOMATIS (max-content)
-      // Ini memastikan kotak tiket memanjang ke bawah sampai semua QR & teks muat 100%
       node.style.width = '600px'; 
       node.style.height = 'max-content'; 
       
@@ -125,7 +123,7 @@ export default function TicketDetail() {
 
       // 2. Catat dimensi aktual SETELAH tiket memanjang menampung semua isinya
       const actualWidth = node.scrollWidth;
-      const actualHeight = node.scrollHeight; // <-- Kunci utamanya ada di sini
+      const actualHeight = node.scrollHeight; 
 
       // 3. Tangkap gambar dengan dimensi penuh yang tidak terpotong
       const imgData = await toPng(node, { 
@@ -211,13 +209,14 @@ export default function TicketDetail() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 pb-12">
       
+      {/* Header & Buttons */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <Link to="/dashboard" className="text-gray-400 hover:text-white flex items-center gap-2 font-medium transition-colors">
           <ArrowLeft className="w-5 h-5" /> Kembali
         </Link>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
            <Link to={`/book?edit=${ticket.id}`}>
              <Button variant="outline" className="whitespace-nowrap border-white/10 text-white hover:bg-white/5">
                <Edit className="w-4 h-4 mr-2" /> Edit Tiket
@@ -231,32 +230,35 @@ export default function TicketDetail() {
                <CheckCircle className="w-4 h-4 mr-2" /> Tandai Lunas
              </Button>
            )}
-           <Button onClick={downloadPDF} disabled={isDownloading} className="font-bold whitespace-nowrap">
+           <Button onClick={downloadPDF} disabled={isDownloading} className="font-bold whitespace-nowrap bg-amber-500 text-black hover:bg-amber-600">
              {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
              {isDownloading ? "Mengunduh..." : "Unduh PDF"}
            </Button>
         </div>
       </div>
 
+      {/* TICKET CARD START */}
       <div className="max-w-xl mx-auto drop-shadow-2xl overflow-hidden rounded-2xl relative border border-white/10">
         
         <div 
           ref={ticketRef} 
-          className="relative text-gray-100 p-8 pt-0 w-[600px] h-[900px] flex flex-col justify-between bg-black" 
+          className="relative text-gray-100 p-8 pt-0 w-[600px] h-max min-h-[900px] flex flex-col justify-between bg-black" 
           style={{ fontFamily: 'var(--font-sans)', width: '100%', height: '100%' }}
         >
+          {/* Background Overlay */}
           <div className="absolute inset-0 z-0 pointer-events-none">
             <img 
               src={backgroundImage} 
               alt="Background Sepatu" 
               className="w-full h-full object-cover opacity-20 grayscale"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/95" />
           </div>
-           
+            
+           {/* Top Section - Event Details */}
            <div className="pt-8 relative z-10">
              <div className="text-center mb-8 pb-8 border-b border-white/10 border-dashed">
-               <div className="inline-flex items-center justify-center p-3 rounded-full bg-amber-500/10 text-amber-500 mb-4">
+               <div className="inline-flex items-center justify-center p-3 rounded-full bg-amber-500/10 text-amber-500 mb-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                  <Film className="w-8 h-8" />
                </div>
                <h1 className="text-4xl font-display font-bold uppercase tracking-widest text-white mb-2">Cine<span className="text-amber-500">matix</span></h1>
@@ -299,51 +301,61 @@ export default function TicketDetail() {
              </div>
            </div>
 
-           <div className="pt-8 mt-8 border-t border-white/10 relative z-10">
-             <div className="flex justify-between items-end">
-               <div>
-                   <div className="mb-2">
-                     <span className={cn(
-                       "px-3 py-1 rounded text-xs font-bold uppercase block mb-1 w-max",
-                       ticket.verified ? "bg-green-500/20 text-green-400 border border-green-500/50" : "bg-amber-500/20 text-amber-500 border border-amber-500/50"
-                     )}>
-                       {ticket.verified ? "Lunas & Terverifikasi" : "Belum Lunas"}
-                     </span>
-                     {ticket.purchaseDate && <div className="text-[10px] text-gray-500">Tgl Beli: <span className="text-gray-400">{ticket.purchaseDate}</span></div>}
-                     {ticket.settlementDate && <div className="text-[10px] text-gray-500">Tgl Lunas: <span className="text-gray-400">{ticket.settlementDate}</span></div>}
-                  </div>
-                  <div className="text-xs text-gray-400">Ticket ID: <span className="font-mono text-gray-300">{ticket.id.toUpperCase()}</span></div>
-                  <div className="text-xs text-gray-400 mt-1">Marketing: {ticket.marketingName}</div>
-               </div>
-               
-               <div className="bg-white p-2 rounded-lg">
-                 <QRCodeCanvas 
-                   value={JSON.stringify({ 
-                     id: ticket.id, 
-                     buyer: ticket.buyerName, 
-                     seats: ticket.seatNumbers.join(','),
-                     verified: ticket.verified
-                   })}
-                   size={100}
-                   level="H"
-                   includeMargin={false}
-                 />
-               </div>
+           {/* BOTTOM SECTION - CENTERED BIG QR CODE */}
+           <div className="pt-8 mt-8 border-t border-white/10 border-dashed relative z-10 flex flex-col items-center">
+             
+             {/* Status Badge & Additional Info */}
+             <div className="flex flex-col items-center mb-6 text-center w-full">
+                <span className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-bold uppercase mb-3 border",
+                  ticket.verified 
+                    ? "bg-green-500/10 text-green-400 border-green-500/30" 
+                    : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                )}>
+                  {ticket.verified ? "Lunas & Terverifikasi" : "Belum Lunas"}
+                </span>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                  <span>Marketing: <span className="text-gray-200 font-medium">{ticket.marketingName}</span></span>
+                  {ticket.purchaseDate && <span>Tgl Beli: <span className="text-gray-200">{ticket.purchaseDate}</span></span>}
+                </div>
              </div>
+
+             {/* QR CODE - Dibuat lebih besar (size: 200) */}
+             <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
+               <QRCodeCanvas 
+                 value={JSON.stringify({ 
+                   id: ticket.id, 
+                   buyer: ticket.buyerName, 
+                   seats: ticket.seatNumbers.join(','),
+                   verified: ticket.verified
+                 })}
+                 size={200}
+                 level="H"
+                 includeMargin={true}
+               />
+             </div>
+
+             {/* Ticket ID */}
+             <div className="text-center space-y-1">
+               <div className="text-[10px] text-gray-400 uppercase tracking-widest">Scan untuk Check-in</div>
+               <div className="font-mono text-sm text-amber-500 font-bold tracking-widest">{ticket.id.toUpperCase()}</div>
+             </div>
+
            </div>
            
-           <div className="absolute top-1/2 -left-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-r border-white/10 transform -translate-y-1/2 z-10" />
-           <div className="absolute top-1/2 -right-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-l border-white/10 transform -translate-y-1/2 z-10" />
+           {/* Ticket Cutout Effects */}
+           <div className="absolute top-[60%] -left-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-r border-white/10 transform -translate-y-1/2 z-10" />
+           <div className="absolute top-[60%] -right-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-l border-white/10 transform -translate-y-1/2 z-10" />
            
         </div>
       </div>
+      {/* TICKET CARD END */}
 
       {/* BLOK TAMPILAN BUKTI PEMBAYARAN */}
       {ticket.paymentProofUrl && (
         <div className="max-w-xl mx-auto mt-6 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center">
           <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest mb-4">Bukti Pembayaran</h3>
           
-          {/* Cek apakah file yang di-upload adalah PDF atau Gambar */}
           {ticket.paymentProofUrl.toLowerCase().includes('.pdf') ? (
              <div className="flex flex-col items-center gap-3 py-4">
                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/30">
@@ -357,7 +369,7 @@ export default function TicketDetail() {
                </a>
              </div>
           ) : (
-            <div className="relative group">
+            <div className="relative group w-full flex justify-center">
               <img 
                 src={ticket.paymentProofUrl} 
                 alt="Bukti Pembayaran" 
@@ -375,6 +387,7 @@ export default function TicketDetail() {
         </div>
       )}
       
+      {/* Modal Hapus Tiket */}
       {isDeleteDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="bg-[#0f172a] border border-white/10 p-6 rounded-2xl max-w-sm w-full space-y-6">
@@ -383,7 +396,7 @@ export default function TicketDetail() {
               <p className="text-gray-400 text-sm">Apakah Anda yakin ingin menghapus tiket ini? Tindakan ini tidak dapat dibatalkan.</p>
             </div>
             <div className="flex gap-3">
-               <Button variant="outline" className="flex-1 border-white/10 hover:bg-white/5" onClick={() => setIsDeleteDialogOpen(false)}>
+               <Button variant="outline" className="flex-1 border-white/10 hover:bg-white/5 text-white" onClick={() => setIsDeleteDialogOpen(false)}>
                  Batal
                </Button>
                <Button variant="outline" className="flex-1 bg-red-500 hover:bg-red-600 border-none text-white" onClick={confirmDelete}>

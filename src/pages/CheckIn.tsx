@@ -211,18 +211,13 @@ export default function CheckIn() {
             
             <div className="rounded-2xl overflow-hidden bg-black aspect-square border-2 border-dashed border-amber-500/50 relative">
               <Scanner
-                onResult={(text) => {
-                  if (text) handleScanQR(text);
-                }}
-                onError={(error) => console.log("Scanner Error:", error?.message)}
-                  // Konfigurasi tambahan agar lebih stabil:
-                  options={{
-                  delayBetweenScanAttempts: 500, // Cek tiap 0.5 detik, jangan terlalu cepat
-                  scanRegion: { width: 300, height: 300 }, // Fokus ke tengah kamera
-                }}
-                constraints={{
-                  facingMode: 'environment', // Wajib: Kamera Belakang
-                }}
+                onResult={(text) => text && handleScan(text)}
+                onError={(error) => console.log(error?.message)}
+                constraints={{ 
+                  facingMode: 'environment', // Paksa kamera belakang
+                  width: { ideal: 1280 },    // Resolusi lebih tinggi
+                  height: { ideal: 720 } 
+                  }}
               />
               <div className="absolute inset-0 border-[40px] border-black/30 pointer-events-none" />
             </div>
