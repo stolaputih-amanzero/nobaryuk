@@ -186,8 +186,8 @@ export default function HomePage() {
               {[
                 { time: "11:30 - 13:00", title: "Registrasi & Klaim Tiket", desc: "Klaim tiket fisik dan pembagian Nobar Snack Pack." },
                 { time: "12:00 - 13:00", title: "Makan Siang Buffet", desc: "Khusus untuk tamu dengan tiket VIP." },
-                { time: "13:00 - 13:30", title: "Pintu Cinema Dibuka & Seremoni", desc: "Penonton memasuki Cinema 1, penayangan video sponsor, seremoni pembukaan, dan sesi foto bersama." },
-                { time: "13:30 - 15:00", title: "Penayangan Film & Penutupan", desc: "Pemutaran Children of Heaven (Subtitle ID), penutupan dan ucapan terimakasih." },
+                { time: "13:00 - 13:20", title: "Pintu Cinema Dibuka & Seremoni", desc: "Penonton memasuki Cinema 1, penayangan video sponsor, seremoni pembukaan, dan sesi foto bersama." },
+                { time: "13:20 - 15:00", title: "Penayangan Film & Penutupan", desc: "Pemutaran Children of Heaven (Subtitle ID), penutupan dan ucapan terimakasih." },
               ].map((item, i) => (
                 <div key={i} className="flex gap-6 relative">
                   <div className="w-4 h-4 rounded-full bg-amber-500 ring-4 ring-black mt-1 shrink-0 z-10" />
