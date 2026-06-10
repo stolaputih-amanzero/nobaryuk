@@ -6,7 +6,7 @@ import { cn } from '@/utils';
 import { Search, CheckCircle2, UserCheck, AlertCircle, QrCode, X, Loader2, UploadCloud } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { supabase } from '../supabaseClient';
-import jsQR from 'jsqr'; // Library ekstraksi QR dari gambar
+import jsQR from 'jsqr'; 
 
 export default function CheckIn() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -15,113 +15,39 @@ export default function CheckIn() {
   const [showAll, setShowAll] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   
-  // Referensi untuk input file tersembunyi
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        const { data, error } = await supabase.from('tickets').select('*');
-        if (error) throw error;
-
-        if (data) {
-          const formatted = data.map((row: any) => ({
-            id: row.id,
-            buyerName: row.buyer_name,
-            seatNumbers: row.seat_numbers || [],
-            verified: row.is_verified,
-            checkedIn: row.is_checked_in,
-            checkedInSeats: row.is_checked_in ? row.seat_numbers : [],
-            createdAt: row.created_at
-          }));
-          formatted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setBookings(formatted);
-        }
-      } catch (error) {
-        console.error("Gagal menarik data tiket:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTickets();
-  }, []);
-
-  // Membaca QR Code (Dari Kamera ATAU Gambar)
-  const handleScanQR = (text: string) => {
-    if (!text) return;
-
-    // Log ke console untuk melihat apa yang sebenarnya terbaca
-    console.log("Raw Scanned Data:", text);
-
+  // Ambil data tiket dari Supabase saat halaman dimuat
+  const fetchTickets = async () => {
     try {
-      // Coba parse JSON
-      const qrData = JSON.parse(text); 
-      setSearchQuery(qrData.id); 
-      setShowScanner(false);
-      alert(`Berhasil! Tiket ditemukan: ${qrData.buyer}`);
-    } catch (e) {
-      // Jika teksnya bukan JSON (misal cuma ID), tetap terima
-      console.log("Data bukan JSON, menganggapnya sebagai ID mentah:", text);
-      setSearchQuery(text);
-      setShowScanner(false);
+      const { data, error } = await supabase.from('tickets').select('*');
+      if (error) throw error;
+
+      if (data) {
+        const formatted = data.map((row: any) => ({
+          id: row.id,
+          buyerName: row.buyer_name,
+          seatNumbers: row.seat_numbers || [],
+          verified: row.is_verified,
+          checkedIn: row.is_checked_in,
+          checkedInSeats: row.is_checked_in ? row.seat_numbers : [],
+          createdAt: row.created_at
+        }));
+        formatted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setBookings(formatted);
+      }
+    } catch (error) {
+      console.error("Gagal menarik data tiket:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // FUNGSI BARU: Upload Foto Screenshot dan Ekstrak QR Code
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  useEffect(() => {
+    fetchTickets();
+  }, []);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // PERBAIKAN: Gunakan Math.floor untuk memastikan dimensi adalah bilangan bulat
-        const MAX_WIDTH = 600;
-        const scale = Math.min(MAX_WIDTH / img.width, 1);
-        const newWidth = Math.floor(img.width * scale);
-        const newHeight = Math.floor(img.height * scale);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-        
-        // Ambil data gambar
-        const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
-        
-        // Pengecekan keamanan: Pastikan data gambar tidak kosong
-        if (!imageData || imageData.data.length === 0) {
-            alert("Gambar tidak terbaca, coba screenshot ulang bagian QR Code saja.");
-            return;
-        }
-
-        try {
-            // Panggil jsQR
-            const code = jsQR(imageData.data, newWidth, newHeight, {
-                inversionAttempts: "dontInvert",
-            });
-            
-            if (code) {
-                handleScanQR(code.data); 
-            } else {
-                alert("QR Code tidak terdeteksi. Tips: Pastikan gambar adalah screenshot yang di-crop hanya pada bagian QR Code saja.");
-            }
-        } catch (err) {
-            console.error("Error saat memproses QR:", err);
-            alert("Gagal memproses gambar QR.");
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
+  // Fungsi untuk mengubah status check-in ke Supabase & State Lokal
   const updateCheckInStatus = async (id: string, isCheckedIn: boolean, checkedSeats: string[]) => {
     setBookings(prev => prev.map(b => b.id === id ? {
       ...b,
@@ -137,6 +63,98 @@ export default function CheckIn() {
       console.error("Gagal update Check-In di Supabase", error);
       alert("Gagal menyimpan kehadiran ke database. Periksa koneksi internet.");
     }
+  };
+
+  // LOGIKA BARU: Membaca ID Tunggal dari QR Code secara Instan & Otomatis Check-In
+  const handleScanQR = async (text: string) => {
+    if (!text) return;
+
+    const scannedId = text.trim();
+    console.log("Membaca ID Tiket:", scannedId);
+
+    // 1. Cari tiket di data lokal bookings
+    const foundTicket = bookings.find(b => b.id.toLowerCase() === scannedId.toLowerCase());
+
+    if (foundTicket) {
+      setSearchQuery(scannedId); 
+      setShowScanner(false);
+
+      const currentCheckedInSeats = foundTicket.checkedInSeats || [];
+      const allCheckedIn = currentCheckedInSeats.length === foundTicket.seatNumbers.length;
+
+      if (!allCheckedIn) {
+        // Otomatis tandai semua kursi milik pembeli tersebut sebagai HADIR
+        await updateCheckInStatus(foundTicket.id, true, [...foundTicket.seatNumbers]);
+        alert(`🎉 CHECK-IN BERHASIL!\n\nPembeli: ${foundTicket.buyerName}\nKursi: ${foundTicket.seatNumbers.join(', ')}`);
+      } else {
+        alert(`ℹ️ Tiket ini sudah melakukan Check-In sebelumnya.\n\nPembeli: ${foundTicket.buyerName}`);
+      }
+    } else {
+      // 2. Jika tidak ketemu di lokal, coba paksa cari langsung ke server Supabase
+      try {
+        const { data, error } = await supabase.from('tickets').select('*').eq('id', scannedId).single();
+        if (error || !data) {
+          alert("❌ Tiket Tidak Valid! ID tidak terdaftar dalam database acara.");
+          return;
+        }
+        
+        setShowScanner(false);
+        setSearchQuery(scannedId);
+        await fetchTickets(); // Refresh list lokal
+        alert(`Tiket ditemukan di database: ${data.buyer_name}. Silahkan tekan tombol "Tandai Hadir" pada layar.`);
+      } catch (e) {
+        alert("❌ QR Code tidak dikenali atau format salah.");
+      }
+    }
+  };
+
+  // Upload Foto Screenshot dan Ekstrak QR Code (Metode Alternatif)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_WIDTH = 600;
+        const scale = Math.min(MAX_WIDTH / img.width, 1);
+        const newWidth = Math.floor(img.width * scale);
+        const newHeight = Math.floor(img.height * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
+        
+        if (!imageData || imageData.data.length === 0) {
+            alert("Gambar tidak terbaca, coba screenshot ulang bagian QR Code saja.");
+            return;
+        }
+
+        try {
+            const code = jsQR(imageData.data, newWidth, newHeight, {
+                inversionAttempts: "dontInvert",
+            });
+            
+            if (code) {
+                handleScanQR(code.data); 
+            } else {
+                alert("QR Code tidak terdeteksi dari foto. Tips: Crop pas di bagian kotak QR Code saja sebelum di-upload.");
+            }
+        } catch (err) {
+            console.error("Error saat memproses QR:", err);
+            alert("Gagal memproses gambar QR.");
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleBulkCheckIn = (id: string, allCheckedIn: boolean, seats: string[]) => {
@@ -197,8 +215,9 @@ export default function CheckIn() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 relative">
+    <div className="space-y-8 animate-in fade-in duration-500 relative pb-12">
       
+      {/* SCANNER OVERLAY SCREEN */}
       {showScanner && (
         <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
           <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl overflow-hidden p-6 shadow-2xl">
@@ -210,18 +229,19 @@ export default function CheckIn() {
             </div>
             
             <div className="rounded-2xl overflow-hidden bg-black aspect-square border-2 border-dashed border-amber-500/50 relative">
+              {/* PERBAIKAN UTAMA: Memanggil fungsi handleScanQR yang benar */}
               <Scanner
-                onResult={(text) => text && handleScan(text)}
+                onResult={(text) => text && handleScanQR(text)} 
                 onError={(error) => console.log(error?.message)}
                 constraints={{ 
-                  facingMode: 'environment', // Paksa kamera belakang
-                  width: { ideal: 1280 },    // Resolusi lebih tinggi
+                  facingMode: 'environment', 
+                  width: { ideal: 1280 },    
                   height: { ideal: 720 } 
-                  }}
+                }}
               />
               <div className="absolute inset-0 border-[40px] border-black/30 pointer-events-none" />
             </div>
-            <p className="text-center text-gray-400 mt-6 text-sm">Arahkan kamera ke QR Code pada tiket digital pengunjung.</p>
+            <p className="text-center text-gray-400 mt-6 text-sm">Arahkan kamera ke QR Code di tengah e-ticket PDF pengunjung.</p>
           </div>
         </div>
       )}
@@ -249,7 +269,6 @@ export default function CheckIn() {
                   />
                 </div>
                 
-                {/* TOMBOL SCAN KAMERA */}
                 <button 
                   onClick={() => setShowScanner(true)}
                   className="bg-amber-500 hover:bg-amber-400 text-black px-4 rounded-lg flex items-center justify-center font-bold transition-colors shrink-0"
@@ -258,7 +277,6 @@ export default function CheckIn() {
                   <QrCode className="w-5 h-5" />
                 </button>
 
-                {/* TOMBOL UPLOAD GAMBAR */}
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-lg flex items-center justify-center font-bold transition-colors shrink-0 border border-white/10"

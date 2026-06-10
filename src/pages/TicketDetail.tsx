@@ -320,17 +320,12 @@ export default function TicketDetail() {
                 </div>
              </div>
 
-             {/* QR CODE - Dibuat lebih besar (size: 200) */}
+             {/* QR CODE - Dibuat jauh lebih sederhana agar terbaca dalam hitungan milidetik */}
              <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
                <QRCodeCanvas 
-                 value={JSON.stringify({ 
-                   id: ticket.id, 
-                   buyer: ticket.buyerName, 
-                   seats: ticket.seatNumbers.join(','),
-                   verified: ticket.verified
-                 })}
+                 value={ticket.id}      {/* HANYA MENGGUNAKAN ID TIKET */}
                  size={200}
-                 level="H"
+                 level="M"              {/* Level Medium agar kotak-kotaknya jauh lebih besar/renggang */}
                  includeMargin={true}
                />
              </div>
