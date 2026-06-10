@@ -37,6 +37,8 @@ const sortSeats = (seats: string[]) => {
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
+  // DUA REFERENSI: 1 untuk Tiket, 1 untuk Halaman Apresiasi VIP
   const ticketRef = useRef<HTMLDivElement>(null);
   const appreciationRef = useRef<HTMLDivElement>(null);
   
@@ -104,123 +106,73 @@ export default function TicketDetail() {
     );
   }
 
+  // FUNGSI PDF BARU: Menggabungkan Tiket & Desain Apresiasi Visual
   const downloadPDF = async () => {
-    if (!ticketRef.current) return;
+    if (!ticketRef.current || !appreciationRef.current) return;
     setIsDownloading(true);
     
-    const node = ticketRef.current;
-    const parentNode = node.parentElement;
+    const nodeTicket = ticketRef.current;
+    const nodeApresiasi = appreciationRef.current;
+    const parentNode = nodeTicket.parentElement;
     
-    // Simpan pengaturan asli
-    const originalWidth = node.style.width;
-    const originalHeight = node.style.height;
+    const originalWidth = nodeTicket.style.width;
+    const originalHeight = nodeTicket.style.height;
     const originalParentOverflow = parentNode ? parentNode.style.overflow : '';
 
     try {
-      node.style.setProperty('width', '600px', 'important'); 
-      node.style.setProperty('height', 'auto', 'important'); 
+      nodeTicket.style.setProperty('width', '600px', 'important'); 
+      nodeTicket.style.setProperty('height', 'auto', 'important'); 
       if (parentNode) {
         parentNode.style.setProperty('overflow', 'visible', 'important');
       }
       
-      await new Promise(resolve => setTimeout(resolve, 250));
+      // Tunggu render QR & Font
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const actualWidth = 600;
-      const actualHeight = node.offsetHeight; 
+      const ticketHeight = nodeTicket.offsetHeight; 
+      const apresiasiHeight = 846; // Ukuran A4 Proporsional
 
-      // 1. Snapshot Tiket
-      const imgData = await toPng(node, { 
+      // 1. Snapshot Halaman 1 (Tiket Utama)
+      const imgTicket = await toPng(nodeTicket, { 
         backgroundColor: '#0A0A0A',
         pixelRatio: 2, 
         width: actualWidth,
-        height: actualHeight,
-        style: { width: `${actualWidth}px`, height: `${actualHeight}px`, margin: '0', transform: 'none' }
+        height: ticketHeight,
+        style: { width: `${actualWidth}px`, height: `${ticketHeight}px`, margin: '0', transform: 'none' }
+      });
+
+      // 2. Snapshot Halaman 2 (Apresiasi VIP Tersembunyi)
+      const imgApresiasi = await toPng(nodeApresiasi, { 
+        backgroundColor: '#0A0A0A',
+        pixelRatio: 2, 
+        width: actualWidth,
+        height: apresiasiHeight,
+        style: { width: `${actualWidth}px`, height: `${apresiasiHeight}px`, margin: '0', transform: 'none' }
       });
       
-      node.style.width = originalWidth;
-      node.style.height = originalHeight;
+      // Kembalikan Tampilan Website
+      nodeTicket.style.width = originalWidth;
+      nodeTicket.style.height = originalHeight;
       if (parentNode) {
         parentNode.style.overflow = originalParentOverflow;
       }
 
-      // Inisialisasi PDF
-      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [actualWidth, actualHeight] });
+      // 3. Susun ke dalam jsPDF
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [actualWidth, ticketHeight] });
       
-      // --- HALAMAN 1: TIKET DIGITAL ---
-      pdf.addImage(imgData, 'PNG', 0, 0, actualWidth, actualHeight);
+      // Masukkan Halaman 1
+      pdf.addImage(imgTicket, 'PNG', 0, 0, actualWidth, ticketHeight);
 
-      // --- HALAMAN 2: APRESIASI EKSKLUSIF (SUPER PREMIUM) ---
-      const page2Height = actualWidth * 1.41; // Format A4 Proporsional
-      pdf.addPage([actualWidth, page2Height], 'p');
-      
-      // Background Hitam Peat
-      pdf.setFillColor(10, 10, 10);
-      pdf.rect(0, 0, actualWidth, page2Height, 'F');
+      // Tambah & Masukkan Halaman 2
+      pdf.addPage([actualWidth, apresiasiHeight], 'p');
+      pdf.addImage(imgApresiasi, 'PNG', 0, 0, actualWidth, apresiasiHeight);
 
-      // BINGKAI EMAS LUAR (Outer Gold Frame)
-      pdf.setDrawColor(245, 158, 11); // Warna Amber
-      pdf.setLineWidth(3);
-      pdf.rect(30, 30, actualWidth - 60, page2Height - 60);
-
-      // BINGKAI PUTIH DALAM (Inner Fine Frame)
-      pdf.setDrawColor(255, 255, 255);
-      pdf.setLineWidth(0.5);
-      // Warna garis putih dengan efek transparansi (abu-abu gelap)
-      pdf.setDrawColor(80, 80, 80); 
-      pdf.rect(40, 40, actualWidth - 80, page2Height - 80);
-
-      // TEKS LOGO HEADER: CINEMATIX ELITE
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('Helvetica', 'bold');
-      pdf.setFontSize(20);
-      // Efek Spacing Lebar (Tracking) disimulasikan
-      pdf.text('C I N E M A T I X   E L I T E', actualWidth / 2, 110, { align: 'center' });
-
-      // JUDUL UTAMA
-      pdf.setTextColor(245, 158, 11); // Warna Amber
-      pdf.setFontSize(34);
-      pdf.text('APRESIASI EKSKLUSIF', actualWidth / 2, 190, { align: 'center' });
-
-      // GARIS PEMISAH BAWAH JUDUL
-      pdf.setDrawColor(245, 158, 11);
-      pdf.setLineWidth(1);
-      pdf.line(actualWidth / 2 - 80, 220, actualWidth / 2 + 80, 220);
-
-      // SUB-TITLE
-      pdf.setTextColor(150, 150, 150);
-      pdf.setFont('Helvetica', 'normal');
-      pdf.setFontSize(14);
-      pdf.text('D I B E R I K A N   D E N G A N   P E N U H   K E H O R M A T A N   K E P A D A :', actualWidth / 2, 270, { align: 'center' });
-
-      // NAMA PEMBELI / DONATUR (VIP)
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('Helvetica', 'bold');
-      pdf.setFontSize(30);
-      pdf.text(ticket.buyerName.toUpperCase(), actualWidth / 2, 320, { align: 'center' });
-
-      // ISI SURAT (Eksklusif & Formal)
-      pdf.setFont('Helvetica', 'normal');
-      pdf.setFontSize(16);
-      pdf.setTextColor(200, 200, 200); 
-      
-      const message = "Kami menyampaikan penghargaan setinggi-tingginya atas partisipasi dan dedikasi Anda. Kontribusi Anda tidak hanya menyempurnakan malam penayangan ini, tetapi juga mewujudkan dampak nyata bagi inisiatif fundraising yang kita bangun bersama.\n\nSelamat menikmati persembahan sinematik eksklusif dari kami.";
-      
-      const splitText = pdf.splitTextToSize(message, actualWidth - 160);
-      // lineHeightFactor memberikan jarak spasi yang mewah (1.8)
-      pdf.text(splitText, actualWidth / 2, 400, { align: 'center', lineHeightFactor: 1.8 });
-
-      // FOOTER / SIGNATURE
-      pdf.setTextColor(245, 158, 11); // Warna Amber
-      pdf.setFont('Helvetica', 'bold');
-      pdf.setFontSize(16);
-      pdf.text('GPI CINEMATIX 2026 COMMITTEE', actualWidth / 2, 600, { align: 'center' });
-
-      // --- SIMPAN FILE ---
-      pdf.save(`Tiket_Nobar_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`Tiket_VIP_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      node.style.width = originalWidth;
-      node.style.height = originalHeight;
+      nodeTicket.style.width = originalWidth;
+      nodeTicket.style.height = originalHeight;
       if (parentNode) {
         parentNode.style.overflow = originalParentOverflow;
       }
@@ -230,8 +182,8 @@ export default function TicketDetail() {
     }
   };
 
+  // FUNGSI KIRIM WHATSAPP OTOMATIS
   const sendWhatsApp = () => {
-    // 1. Susun pesan menggunakan data dinamis dari tiket
     const waText = `Yang kami kasihi *${ticket.buyerName}*,
 
 Salam hangat dari tim GPI Cinematix 2026.
@@ -251,10 +203,7 @@ Kami sangat menantikan kehadiran Anda. Terima kasih atas kepercayaan dan kontrib
 Salam hormat,
 *GPI Cinematix 2026 Committee*`;
 
-    // 2. Ubah teks menjadi format URL yang dipahami oleh WhatsApp
     const encodedText = encodeURIComponent(waText);
-
-    // 3. Buka tab baru menuju WhatsApp (Akan otomatis membuka WA Web atau Aplikasi WA di HP)
     window.open(`https://wa.me/?text=${encodedText}`, '_blank');
   };
 
@@ -263,20 +212,12 @@ Salam hormat,
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ 
-          is_verified: true, 
-          settlement_date: ticket.settlementDate || today 
-        })
+        .update({ is_verified: true, settlement_date: ticket.settlementDate || today })
         .eq('id', ticket.id);
 
       if (error) throw error;
 
-      setTicket((prev: any) => ({
-        ...prev,
-        verified: true,
-        settlementDate: prev.settlementDate || today
-      }));
-      
+      setTicket((prev: any) => ({ ...prev, verified: true, settlementDate: prev.settlementDate || today }));
       alert("Tiket berhasil ditandai Lunas!");
     } catch (error) {
       console.error("Gagal memverifikasi tiket:", error);
@@ -286,11 +227,7 @@ Salam hormat,
 
   const confirmDelete = async () => {
     try {
-      const { error } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('id', ticket.id);
-
+      const { error } = await supabase.from('tickets').delete().eq('id', ticket.id);
       if (error) throw error;
       
       setIsDeleteDialogOpen(false);
@@ -301,12 +238,10 @@ Salam hormat,
     }
   };
 
-  const handleDelete = () => {
-    setIsDeleteDialogOpen(true);
-  };
+  const handleDelete = () => setIsDeleteDialogOpen(true);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 pb-12">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 pb-12 relative overflow-x-hidden">
       
       {/* Header & Buttons */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -327,21 +262,22 @@ Salam hormat,
                <CheckCircle className="w-4 h-4 mr-2" /> Tandai Lunas
              </Button>
            )}
+           
+           {/* Tombol Kirim WA Otomatis */}
+           <Button onClick={sendWhatsApp} className="font-bold whitespace-nowrap bg-green-500 text-white hover:bg-green-600 border-none">
+             <MessageCircle className="w-4 h-4 mr-2" /> Buat Pesan WA
+           </Button>
+
+           {/* Tombol Download PDF */}
            <Button onClick={downloadPDF} disabled={isDownloading} className="font-bold whitespace-nowrap bg-amber-500 text-black hover:bg-amber-600">
              {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
              {isDownloading ? "Mengunduh..." : "Unduh PDF"}
            </Button>
-
-           {/* --- TOMBOL WHATSAPP BARU --- */}
-           <Button onClick={sendWhatsApp} className="font-bold whitespace-nowrap bg-green-500 text-white hover:bg-green-600 border-none">
-             <MessageCircle className="w-4 h-4 mr-2" /> Buat Pesan WA
-           </Button>
         </div>
       </div>
 
-      {/* TICKET CARD START */}
+      {/* TICKET CARD START (HALAMAN 1 PDF) */}
       <div className="max-w-xl mx-auto drop-shadow-2xl overflow-hidden rounded-2xl relative border border-white/10">
-        
         <div 
           ref={ticketRef} 
           className="relative text-gray-100 p-8 pt-0 w-[600px] h-max min-h-[900px] flex flex-col justify-between bg-black" 
@@ -351,7 +287,7 @@ Salam hormat,
           <div className="absolute inset-0 z-0 pointer-events-none">
             <img 
               src={backgroundImage} 
-              alt="Background Sepatu" 
+              alt="Background" 
               className="w-full h-full object-cover opacity-20 grayscale"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/95" />
@@ -403,10 +339,7 @@ Salam hormat,
              </div>
            </div>
 
-           
            <div className="pt-8 mt-8 border-t border-white/10 border-dashed relative z-10 flex flex-col items-center">
-             
-         
              <div className="flex flex-col items-center mb-6 text-center w-full">
                 <span className={cn(
                   "px-4 py-1.5 rounded-full text-xs font-bold uppercase mb-3 border",
@@ -423,29 +356,24 @@ Salam hormat,
              </div>
 
              <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
-              <QRCodeSVG 
-                // Mengubah ID mentah menjadi Link URL dinamis sesuai domain website Anda
-                value={`${window.location.origin}/checkin/${ticket.id}`}
-                size={240}          
-                level="M"           
-                includeMargin={true}
-                bgColor={"#FFFFFF"} 
-                fgColor={"#000000"} 
-              />
-            </div>
+               <QRCodeSVG 
+                 value={`${window.location.origin}/checkin/${ticket.id}`}
+                 size={240}
+                 level="H"
+                 includeMargin={true}
+                 bgColor={"#FFFFFF"}
+                 fgColor={"#000000"}
+               />
+             </div>
 
-             {/* Ticket ID */}
              <div className="text-center space-y-1">
                <div className="text-[10px] text-gray-400 uppercase tracking-widest">Scan untuk Check-in</div>
                <div className="font-mono text-sm text-amber-500 font-bold tracking-widest">{ticket.id.toUpperCase()}</div>
              </div>
-
            </div>
            
-           {/* Ticket Cutout Effects */}
            <div className="absolute top-[60%] -left-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-r border-white/10 transform -translate-y-1/2 z-10" />
            <div className="absolute top-[60%] -right-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-l border-white/10 transform -translate-y-1/2 z-10" />
-           
         </div>
       </div>
       {/* TICKET CARD END */}
@@ -506,8 +434,7 @@ Salam hormat,
         </div>
       )}
 
-      {/* 
-        ==================================================================
+      {/* ==================================================================
         HALAMAN 2 PDF (APRESIASI VIP) - DISEMBUNYIKAN DARI LAYAR WEBSITE 
         ==================================================================
       */}
@@ -536,29 +463,29 @@ Salam hormat,
                 Cine<span className="text-amber-500">matix</span> <span className="text-gray-500 font-normal text-sm">ELITE</span>
               </h3>
               
-              <h1 className="text-4xl text-amber-500 font-bold tracking-[0.2em] mb-6">
+              <h1 className="text-4xl text-amber-500 font-bold tracking-[0.15em] mb-6">
                 APRESIASI EKSKLUSIF
               </h1>
               
               <div className="w-24 h-px bg-white/20 mb-10" />
               
               <p className="text-gray-400 text-xs tracking-[0.2em] uppercase mb-4">
-                Diberikan dengan penuh kehormatan kepada:
+                DIBERIKAN DENGAN PENUH KEHORMATAN KEPADA:
               </p>
               
-              <h2 className="text-4xl text-white italic font-serif mb-12 px-4 leading-tight">
+              <h2 className="text-4xl text-white font-bold mb-12 px-4 leading-tight uppercase tracking-wider">
                 {ticket.buyerName}
               </h2>
               
-              <p className="text-gray-300 text-lg leading-[1.8] mb-16 max-w-sm">
-                Kami menyampaikan penghargaan setinggi-tingginya atas partisipasi dan dedikasi Anda. Kontribusi Anda tidak hanya menyempurnakan malam penayangan ini, tetapi juga mewujudkan dampak nyata bagi inisiatif amal yang kita bangun bersama.
+              <p className="text-gray-300 text-[15px] leading-[1.8] mb-16 max-w-sm">
+                Kami menyampaikan penghargaan setinggi-tingginya atas partisipasi dan dedikasi Anda. Kontribusi Anda tidak hanya menyempurnakan malam penayangan ini, tetapi juga mewujudkan dampak nyata bagi inisiatif <span className="italic">fundraising</span> yang kita bangun bersama.
                 <br/><br/>
                 Selamat menikmati persembahan sinematik eksklusif dari kami.
               </p>
 
               <div className="mt-auto">
                 <p className="text-amber-500 font-bold tracking-widest uppercase text-sm border-t border-amber-500/30 pt-4">
-                  Cinematix 2026 Committee
+                  GPI CINEMATIX 2026 COMMITTEE
                 </p>
               </div>
               
@@ -568,6 +495,6 @@ Salam hormat,
       </div>
       {/* ======================= AKHIR HALAMAN 2 ======================= */}
 
-    </div> // INI ADALAH DIV PENUTUP UTAMA COMPONENT ANDA
+    </div>
   );
 }
