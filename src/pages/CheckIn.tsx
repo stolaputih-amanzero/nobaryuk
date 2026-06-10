@@ -8,7 +8,8 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 import { supabase } from '../supabaseClient';
 import jsQR from 'jsqr';
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable'; 
+import autoTable from 'jspdf-autotable';
+import Swal from 'sweetalert2'; 
 
 export default function CheckIn() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -63,7 +64,14 @@ export default function CheckIn() {
       }).eq('id', id);
     } catch (error) {
       console.error("Gagal update Check-In di Supabase", error);
-      alert("Gagal menyimpan kehadiran ke database. Periksa koneksi internet.");
+      Swal.fire({
+        title: 'Koneksi Bermasalah',
+        text: 'Gagal menyimpan kehadiran ke database. Periksa koneksi internet.',
+        icon: 'error',
+        background: '#111111',
+        color: '#ffffff',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
 
@@ -169,7 +177,14 @@ const downloadAttendancePDF = () => {
     console.log("Membaca ID Tiket Ter-ekstrak:", scannedId);
 
     if (!scannedId) {
-      alert("❌ Format QR Code tidak valid atau kosong.");
+      Swal.fire({
+        title: 'Format Tidak Valid',
+        text: 'Format QR Code tidak valid atau kosong.',
+        icon: 'warning',
+        background: '#111111',
+        color: '#ffffff',
+        confirmButtonColor: '#ef4444'
+      });
       return;
     }
 
@@ -186,25 +201,66 @@ const downloadAttendancePDF = () => {
       if (!allCheckedIn) {
         // Otomatis tandai semua kursi milik pembeli tersebut sebagai HADIR
         await updateCheckInStatus(foundTicket.id, true, [...foundTicket.seatNumbers]);
-        alert(`🎉 CHECK-IN BERHASIL!\n\nPembeli: ${foundTicket.buyerName}\nKursi: ${foundTicket.seatNumbers.join(', ')}`);
+        
+        Swal.fire({
+          title: 'CHECK-IN BERHASIL!',
+          html: `<div class="text-left">
+                   <b>Pembeli:</b> ${foundTicket.buyerName}<br/>
+                   <b>Kursi:</b> <span class="text-amber-500 font-mono">${foundTicket.seatNumbers.join(', ')}</span>
+                 </div>`,
+          icon: 'success',
+          background: '#111111',
+          color: '#ffffff',
+          confirmButtonColor: '#f59e0b',
+          confirmButtonText: 'OK, Lanjut'
+        });
       } else {
-        alert(`ℹ️ Tiket ini sudah melakukan Check-In sebelumnya.\n\nPembeli: ${foundTicket.buyerName}`);
+        Swal.fire({
+          title: 'Sudah Check-In',
+          html: `Tiket atas nama <b>${foundTicket.buyerName}</b> sudah melakukan scan sebelumnya.`,
+          icon: 'info',
+          background: '#111111',
+          color: '#ffffff',
+          confirmButtonColor: '#3b82f6' 
+        });
       }
     } else {
       // 2. Jika tidak ketemu di lokal, coba paksa cari langsung ke server Supabase
       try {
         const { data, error } = await supabase.from('tickets').select('*').eq('id', scannedId).single();
         if (error || !data) {
-          alert("❌ Tiket Tidak Valid! ID tidak terdaftar dalam database acara.");
+          Swal.fire({
+            title: 'Tiket Tidak Valid!',
+            text: 'ID tidak terdaftar dalam database acara.',
+            icon: 'error',
+            background: '#111111',
+            color: '#ffffff',
+            confirmButtonColor: '#ef4444'
+          });
           return;
         }
         
         setShowScanner(false);
         setSearchQuery(scannedId);
         await fetchTickets(); // Refresh list lokal
-        alert(`Tiket ditemukan di database: ${data.buyer_name}. Silahkan tekan tombol "Tandai Hadir" pada layar.`);
+        
+        Swal.fire({
+          title: 'Tiket Ditemukan',
+          text: `Tiket atas nama ${data.buyer_name} ada di database. Silahkan tekan tombol "Tandai Hadir" pada layar.`,
+          icon: 'success',
+          background: '#111111',
+          color: '#ffffff',
+          confirmButtonColor: '#f59e0b'
+        });
       } catch (e) {
-        alert("❌ QR Code tidak dikenali atau format salah.");
+        Swal.fire({
+          title: 'Gagal Membaca',
+          text: 'QR Code tidak dikenali atau format salah.',
+          icon: 'error',
+          background: '#111111',
+          color: '#ffffff',
+          confirmButtonColor: '#ef4444'
+        });
       }
     }
   };
@@ -233,7 +289,14 @@ const downloadAttendancePDF = () => {
         const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
         
         if (!imageData || imageData.data.length === 0) {
-            alert("Gambar tidak terbaca, coba screenshot ulang bagian QR Code saja.");
+            Swal.fire({
+              title: 'Gambar Tidak Terbaca',
+              text: 'Coba screenshot ulang bagian QR Code saja secara lebih jelas.',
+              icon: 'warning',
+              background: '#111111',
+              color: '#ffffff',
+              confirmButtonColor: '#f59e0b'
+            });
             return;
         }
 
@@ -245,11 +308,25 @@ const downloadAttendancePDF = () => {
             if (code) {
                 handleScanQR(code.data); 
             } else {
-                alert("QR Code tidak terdeteksi dari foto. Tips: Crop pas di bagian kotak QR Code saja sebelum di-upload.");
+                Swal.fire({
+                  title: 'QR Code Tidak Terdeteksi',
+                  text: 'Tips: Crop pas di bagian kotak QR Code saja sebelum di-upload.',
+                  icon: 'warning',
+                  background: '#111111',
+                  color: '#ffffff',
+                  confirmButtonColor: '#f59e0b'
+                });
             }
         } catch (err) {
             console.error("Error saat memproses QR:", err);
-            alert("Gagal memproses gambar QR.");
+            Swal.fire({
+              title: 'Gagal Memproses Gambar',
+              text: 'Terjadi kesalahan saat memindai gambar QR.',
+              icon: 'error',
+              background: '#111111',
+              color: '#ffffff',
+              confirmButtonColor: '#ef4444'
+            });
         }
       };
       img.src = event.target?.result as string;
@@ -578,7 +655,7 @@ const downloadAttendancePDF = () => {
                 <span className="absolute -top-3 bg-[#111111] px-4 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
                 <div className="absolute bottom-0 w-3/4 h-32 bg-gradient-to-t from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
               </div>
-              
+
             </CardContent>
           </Card>
         </div>
