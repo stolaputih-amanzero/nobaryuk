@@ -204,7 +204,7 @@ _Waktu:_
 *Sabtu, 11 Juli 2026 | 12:00 WIB*
 
 _Tempat:_
-*Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta*
+*Cinema 1, Lt. 1 - Cinepolis Senayan Park Jakarta*
 
 
 Kami sangat menantikan kehadiran Anda. Terima kasih atas kepercayaan dan kontribusi mulia yang telah diberikan.
@@ -329,7 +329,7 @@ Salam hormat,
                 <div>
                    <div className="text-xs text-gray-400 uppercase font-bold mb-1">Waktu / Time</div>
                    <div className="font-semibold text-lg text-white flex items-center gap-1">
-                     <Clock className="w-4 h-4 text-amber-500" /> 11:30 WIB
+                     <Clock className="w-4 h-4 text-amber-500" /> 12:00 WIB
                    </div>
                 </div>
                 <div>
@@ -342,7 +342,7 @@ Salam hormat,
                    <div className="text-xs text-gray-400 uppercase font-bold mb-1">Lokasi Studio</div>
                    <div className="font-semibold text-white flex items-center gap-2">
                      <MapPin className="w-4 h-4 text-amber-500" /> 
-                     Cinema 1, Lt.1 - Cinepolis Senayan Park Jakarta
+                     Cinema 1, Lt. 1 - Cinepolis Senayan Park Jakarta
                    </div>
                 </div>
                 {/* --- TAMBAHAN BARU: JUMLAH TIKET --- */}

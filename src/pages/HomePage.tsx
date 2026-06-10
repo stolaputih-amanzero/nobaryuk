@@ -138,14 +138,14 @@ export default function HomePage() {
             <div>
               <div className="text-sm text-gray-400 font-medium mb-1">Waktu</div>
               <div className="text-lg font-semibold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-500" /> 11:30 WIB
+                <Clock className="w-5 h-5 text-amber-500" /> 13:00 WIB
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-400 font-medium mb-1">Lokasi Venue</div>
               <div className="text-lg font-semibold text-white flex items-start gap-2">
                 <MapPin className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" /> 
-                <span>Cinema 1 Cinepolis<br/><span className="text-sm text-gray-400">1st Floor - Senayan Park, Jakarta</span></span>
+                <span>Cinema 1 Cinepolis<br/><span className="text-sm text-gray-400">Lt. 1 - Senayan Park, Jakarta</span></span>
               </div>
             </div>
           </CardContent>
@@ -164,7 +164,7 @@ export default function HomePage() {
           <div className="space-y-4">
             {[
               "Pastikan barcode tiket PDF/JPG sudah diunduh di perangkat Anda sebelum tiba di venue.",
-              "Datang selambat-lambatnya 15 menit sebelum jam tayang (Pukul 11:15 WIB).",
+              "Datang selambat-lambatnya 15 menit sebelum jam tayang (Pukul 12:45 WIB).",
               "Tunjukkan barcode tiket digital Anda kepada panitia di meja registrasi Cinepolis Cinema 1.",
               "Pastikan nama dan nomor seat pada tiket digital sesuai.",
             ].map((text, i) => (
