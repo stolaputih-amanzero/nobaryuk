@@ -77,7 +77,7 @@ export default function HomePage() {
           
           {/* PERBAIKAN: Menurunkan ukuran font di HP (text-4xl) agar tidak memicu pemotongan baris (clipping) */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-3 md:mb-4 leading-tight break-words">
-            Children of Heaven <span className="text-2xl md:text-4xl text-gray-500 font-normal whitespace-nowrap">(2026)</span>
+            Children of Heaven <span className="text-2xl md:text-4xl text-gray-300 font-normal whitespace-nowrap">(2026)</span>
           </h1>
           
           <p className="text-sm md:text-base text-gray-400 max-w-2xl mb-6 md:mb-8">
