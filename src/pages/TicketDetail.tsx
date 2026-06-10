@@ -301,10 +301,10 @@ export default function TicketDetail() {
              </div>
            </div>
 
-           {/* BOTTOM SECTION - CENTERED BIG QR CODE */}
+           
            <div className="pt-8 mt-8 border-t border-white/10 border-dashed relative z-10 flex flex-col items-center">
              
-             {/* Status Badge & Additional Info */}
+         
              <div className="flex flex-col items-center mb-6 text-center w-full">
                 <span className={cn(
                   "px-4 py-1.5 rounded-full text-xs font-bold uppercase mb-3 border",
@@ -320,12 +320,11 @@ export default function TicketDetail() {
                 </div>
              </div>
 
-             {/* QR CODE - Dibuat jauh lebih sederhana agar terbaca dalam hitungan milidetik */}
              <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
                <QRCodeCanvas 
-                 value={ticket.id}      {/* HANYA MENGGUNAKAN ID TIKET */}
+                 value={ticket.id}
                  size={200}
-                 level="M"              {/* Level Medium agar kotak-kotaknya jauh lebih besar/renggang */}
+                 level="M"
                  includeMargin={true}
                />
              </div>
