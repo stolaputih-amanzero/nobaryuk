@@ -332,15 +332,16 @@ export default function TicketDetail() {
              </div>
 
              <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
-               <QRCodeSVG 
-                 value={ticket.id}
-                 size={240}
-                 level="H"
-                 includeMargin={true}
-                 bgColor={"#FFFFFF"}
-                 fgColor={"#000000"}
-               />
-             </div>
+              <QRCodeSVG 
+                // Mengubah ID mentah menjadi Link URL dinamis sesuai domain website Anda
+                value={`${window.location.origin}/checkin/${ticket.id}`}
+                size={240}          
+                level="H"           
+                includeMargin={true}
+                bgColor={"#FFFFFF"} 
+                fgColor={"#000000"} 
+              />
+            </div>
 
              {/* Ticket ID */}
              <div className="text-center space-y-1">
