@@ -574,11 +574,11 @@ const downloadAttendancePDF = () => {
               </div>
 
               {/* Screen Divider - Posisinya Diturunkan Ke Bawah */}
-              <div className="w-full border-t-[4px] border-white/10 mt-10 relative flex justify-center">
-                <span className="absolute -top-3 text-[10px] bg-[#111111] px-4 font-bold text-gray-500 tracking-[0.3em] uppercase">S c r e e n</span>
-                <div className="absolute bottom-0 w-1/2 h-24 bg-gradient-to-t from-white/5 to-transparent blur-xl pointer-events-none" />
+              <div className="w-full border-t-[8px] border-amber-500/20 mt-12 relative flex justify-center">
+                <span className="absolute -top-3 bg-[#111111] px-4 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
+                <div className="absolute bottom-0 w-3/4 h-32 bg-gradient-to-t from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
               </div>
-
+              
             </CardContent>
           </Card>
         </div>
