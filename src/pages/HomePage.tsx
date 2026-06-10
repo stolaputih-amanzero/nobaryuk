@@ -184,7 +184,7 @@ export default function HomePage() {
             <div className="absolute left-10 top-8 bottom-8 w-px bg-white/10" />
             <div className="space-y-8 relative">
               {[
-                { time: "11:30 - 13:00", title: "Registrasi & Klaim Tiket", desc: "Klaim tiket fisik dan pembagian Nobar Snack Pack." },
+                { time: "12:00 - 13:00", title: "Registrasi & Klaim Tiket", desc: "Klaim tiket fisik dan pembagian Nobar Snack Pack." },
                 { time: "12:00 - 13:00", title: "Makan Siang Buffet", desc: "Khusus untuk tamu dengan tiket VIP." },
                 { time: "13:00 - 13:20", title: "Pintu Cinema Dibuka & Seremoni", desc: "Penonton memasuki Cinema 1, penayangan video sponsor, seremoni pembukaan, dan sesi foto bersama." },
                 { time: "13:20 - 15:00", title: "Penayangan Film & Penutupan", desc: "Pemutaran Children of Heaven (Subtitle ID), penutupan dan ucapan terimakasih." },
