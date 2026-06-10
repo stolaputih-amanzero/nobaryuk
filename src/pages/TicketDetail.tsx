@@ -47,7 +47,7 @@ export default function TicketDetail() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const backgroundImage = "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600&auto=format&fit=crop&q=80";
+  const backgroundImage = "/background.png";
 
   useEffect(() => {
     const fetchTicketDetail = async () => {
