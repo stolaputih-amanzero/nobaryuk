@@ -108,24 +108,31 @@ export default function TicketDetail() {
     setIsDownloading(true);
     
     const node = ticketRef.current;
+    const parentNode = node.parentElement; // Ambil elemen pembungkus (parent)
     
-    // Simpan pengaturan CSS asli agar tidak merusak tampilan website
+    // Simpan pengaturan CSS asli agar bisa dikembalikan nanti
     const originalWidth = node.style.width;
     const originalHeight = node.style.height;
+    const originalParentOverflow = parentNode ? parentNode.style.overflow : '';
 
     try {
-      // 1. Trik Master: Paksa tiket menjadi lebar 600px dan tinggi OTOMATIS (max-content)
+      // 1. Paksa lebar tetap 600px dan tinggi mengikuti isi konten secara natural
       node.style.width = '600px'; 
-      node.style.height = 'max-content'; 
+      node.style.height = 'auto'; 
       
-      // Beri jeda 50ms agar browser me-render ulang ukuran yang baru sebelum dipotret
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // 2. Trik Penting: Bebaskan parent dari batasan overflow agar tiket tidak terpotong kardus/layar
+      if (parentNode) {
+        parentNode.style.overflow = 'visible';
+      }
+      
+      // 3. Beri jeda 300ms agar browser selesai me-render Canvas QR dan Font dengan sempurna
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // 2. Catat dimensi aktual SETELAH tiket memanjang menampung semua isinya
-      const actualWidth = node.scrollWidth;
-      const actualHeight = node.scrollHeight; 
+      // 4. Catat dimensi aktual yang akurat menggunakan offsetHeight
+      const actualWidth = 600;
+      const actualHeight = node.offsetHeight; 
 
-      // 3. Tangkap gambar dengan dimensi penuh yang tidak terpotong
+      // 5. Tangkap gambar
       const imgData = await toPng(node, { 
         backgroundColor: '#0A0A0A',
         pixelRatio: 2, 
@@ -139,11 +146,14 @@ export default function TicketDetail() {
         }
       });
       
-      // 4. Kembalikan tampilan layar website ke semula secepat kilat
+      // 6. Kembalikan semua tampilan ke kondisi semula secepat kilat
       node.style.width = originalWidth;
       node.style.height = originalHeight;
+      if (parentNode) {
+        parentNode.style.overflow = originalParentOverflow;
+      }
 
-      // 5. Masukkan gambar utuh ke PDF
+      // 7. Masukkan gambar ke PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (actualHeight * pdfWidth) / actualWidth; 
@@ -152,9 +162,12 @@ export default function TicketDetail() {
       pdf.save(`Tiket_${ticket.buyerName.replace(/\s+/g, '_')}_Cinepolis.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      // Jika error, pastikan tampilan kembali normal
+      // Pastikan tampilan kembali normal jika terjadi error
       node.style.width = originalWidth;
       node.style.height = originalHeight;
+      if (parentNode) {
+        parentNode.style.overflow = originalParentOverflow;
+      }
       alert('Gagal membuat PDF. Silahkan coba lagi atau screenshot tiket ini.');
     } finally {
       setIsDownloading(false);
