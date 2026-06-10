@@ -168,7 +168,7 @@ export default function TicketDetail() {
       pdf.addPage([actualWidth, apresiasiHeight], 'p');
       pdf.addImage(imgApresiasi, 'PNG', 0, 0, actualWidth, apresiasiHeight);
 
-      pdf.save(`Tiket_VIP_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`Tiket_Nobar_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
       nodeTicket.style.width = originalWidth;
@@ -449,7 +449,7 @@ Salam hormat,
             <img 
               src={backgroundImage} 
               alt="Premium Background" 
-              className="w-full h-full object-cover opacity-20 grayscale"
+              className="w-full h-full object-cover opacity-40 grayscale"
             />
             {/* Gradien yang sangat gelap agar teks putih kontras & terbaca jelas */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/80 to-black/95" />
