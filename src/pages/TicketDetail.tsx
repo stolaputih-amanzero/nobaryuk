@@ -215,7 +215,7 @@ export default function TicketDetail() {
       pdf.text('GPI CINEMATIX 2026 COMMITTEE', actualWidth / 2, 600, { align: 'center' });
 
       // --- SIMPAN FILE ---
-      pdf.save(`Tiket_VIP_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
+      pdf.save(`Tiket_Nobar_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
       node.style.width = originalWidth;
