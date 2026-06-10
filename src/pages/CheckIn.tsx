@@ -3,10 +3,12 @@ import { PRICING, SeatType } from '../store/AppContext';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils';
-import { Search, CheckCircle2, UserCheck, AlertCircle, QrCode, X, Loader2, UploadCloud } from 'lucide-react';
+import { Search, CheckCircle2, UserCheck, AlertCircle, QrCode, X, Loader2, UploadCloud, FileText } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { supabase } from '../supabaseClient';
-import jsQR from 'jsqr'; 
+import jsQR from 'jsqr';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable'; 
 
 export default function CheckIn() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -63,6 +65,99 @@ export default function CheckIn() {
       console.error("Gagal update Check-In di Supabase", error);
       alert("Gagal menyimpan kehadiran ke database. Periksa koneksi internet.");
     }
+  };
+
+const downloadAttendancePDF = () => {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const today = new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // 1. TAMPILAN HEADER LAPORAN
+    pdf.setFillColor(10, 10, 10); // Warna Hitam Elegan Cinematix
+    pdf.rect(0, 0, 210, 40, 'F');
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('Helvetica', 'bold');
+    pdf.setFontSize(22);
+    pdf.text('CINEMATIX', 15, 18);
+
+    pdf.setFont('Helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(245, 158, 11); // Warna Amber Khas Aplikasi
+    pdf.text('Nonton Bareng Event 2026 — Laporan Kehadiran', 15, 25);
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text(`Dicetak pada: ${today}`, 145, 25);
+
+    // 2. KOTAK STATISTIK RINGKASAN
+    const totalTiket = bookings.length;
+    const totalHadir = bookings.filter(b => b.checkedIn).length;
+    const belumHadir = totalTiket - totalHadir;
+
+    // Background Kotak Abu-abu
+    pdf.setFillColor(245, 245, 245);
+    pdf.rect(15, 48, 180, 20, 'F');
+
+    pdf.setTextColor(50, 50, 50);
+    pdf.setFont('Helvetica', 'bold');
+    pdf.setFontSize(10);
+    pdf.text(`Total Tiket: ${totalTiket}`, 25, 60);
+    pdf.text(`Sudah Hadir: ${totalHadir}`, 85, 60);
+    pdf.text(`Belum Datang: ${belumHadir}`, 145, 60);
+
+    // 3. STRUKTUR DATA UNTUK TABEL
+    const tableRows = bookings.map((ticket, index) => {
+      const currentCheckedInSeats = ticket.checkedInSeats || (ticket.checkedIn ? ticket.seatNumbers : []);
+      const allCheckedIn = currentCheckedInSeats.length === ticket.seatNumbers.length;
+      
+      return [
+        index + 1,
+        ticket.id.toUpperCase().substring(0, 8) + '...', // Persingkat UUID agar tabel muat
+        ticket.buyerName,
+        ticket.seatNumbers.join(', '),
+        allCheckedIn ? 'HADIR' : 'BELUM DATANG'
+      ];
+    });
+
+    // 4. GENERATE TABEL OTOMATIS
+    autoTable(pdf, {
+      startY: 75,
+      head: [['No', 'ID Tiket', 'Nama Pembeli', 'Nomor Kursi', 'Status Kehadiran']],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [245, 158, 11], // Header tabel warna Amber
+        textColor: [0, 0, 0],       // Teks hitam kontras
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { cellWidth: 10 },  // No
+        1: { cellWidth: 30 },  // ID Tiket
+        2: { cellWidth: 55 },  // Nama
+        3: { cellWidth: 45 },  // Kursi
+        4: { cellWidth: 40 }   // Status
+      },
+      didParseCell: (data) => {
+        // Trik mewarnai baris Status khusus penonton yang sudah "HADIR" menjadi Hijau
+        if (data.section === 'body' && data.column.index === 4) {
+          if (data.cell.raw === 'HADIR') {
+            data.cell.styles.textColor = [34, 197, 94]; // Warna hijau Tailwind
+            data.cell.styles.fontStyle = 'bold';
+          } else {
+            data.cell.styles.textColor = [239, 68, 68];  // Warna merah Tailwind
+          }
+        }
+      }
+    });
+
+    // 5. SIMPAN FILE PDF
+    pdf.save(`Laporan_Kehadiran_Cinematix_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   // LOGIKA BARU: Membaca ID dari QR Code (Mendukung format URL maupun UUID mentah)
@@ -262,6 +357,21 @@ export default function CheckIn() {
       <div>
         <h1 className="text-3xl font-display font-bold text-white mb-2">Registrasi Kehadiran (Check-In)</h1>
         <p className="text-gray-400">Verifikasi tiket pembeli yang hadir dan pantau okupansi kursi secara real-time.</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-white mb-2">Registrasi Kehadiran (Check-In)</h1>
+          <p className="text-gray-400">Verifikasi tiket pembeli yang hadir dan pantau okupansi kursi secara real-time.</p>
+        </div>
+        
+        {/* TOMBOL BARU UNTUK DOWNLOAD LAPORAN PDF */}
+        <Button 
+          onClick={downloadAttendancePDF}
+          className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold whitespace-nowrap border border-white/10 self-start sm:self-center"
+        >
+          <FileText className="w-4 h-4 mr-2 text-amber-500" /> Cetak PDF Kehadiran
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
