@@ -13,7 +13,7 @@ interface Movie {
 }
 
 export default function HomePage() {
-  const showTime = new Date('2026-07-11T11:30:00+07:00');
+  const showTime = new Date('2026-07-11T13:00:00+07:00');
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
   
   const [movie, setMovie] = useState<Movie | null>(null);
