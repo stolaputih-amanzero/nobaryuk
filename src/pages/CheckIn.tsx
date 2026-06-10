@@ -65,12 +65,18 @@ export default function CheckIn() {
     }
   };
 
-  // LOGIKA BARU: Membaca ID Tunggal dari QR Code secara Instan & Otomatis Check-In
+  // LOGIKA BARU: Membaca ID dari QR Code (Mendukung format URL maupun UUID mentah)
   const handleScanQR = async (text: string) => {
     if (!text) return;
 
-    const scannedId = text.trim();
-    console.log("Membaca ID Tiket:", scannedId);
+    // PERBAIKAN 1: Ekstrak ID saja dari bagian akhir jika input berupa URL link
+    const scannedId = text.includes('/') ? text.split('/').pop()?.trim() || '' : text.trim();
+    console.log("Membaca ID Tiket Ter-ekstrak:", scannedId);
+
+    if (!scannedId) {
+      alert("❌ Format QR Code tidak valid atau kosong.");
+      return;
+    }
 
     // 1. Cari tiket di data lokal bookings
     const foundTicket = bookings.find(b => b.id.toLowerCase() === scannedId.toLowerCase());
@@ -229,10 +235,17 @@ export default function CheckIn() {
             </div>
             
             <div className="rounded-2xl overflow-hidden bg-black aspect-square border-2 border-dashed border-amber-500/50 relative">
-              {/* PERBAIKAN UTAMA: Memanggil fungsi handleScanQR yang benar */}
+              {/* PERBAIKAN 2: Mengubah ke prop onScan dan menangani format array data */}
               <Scanner
-                onResult={(text) => text && handleScanQR(text)} 
-                onError={(error) => console.log(error?.message)}
+                onScan={(result) => {
+                  if (!result) return;
+                  // Antisipasi: jika library mengembalikan bentuk array (v2) atau string langsung (v1)
+                  const scannedText = Array.isArray(result) ? result[0]?.rawValue : result;
+                  if (scannedText) {
+                    handleScanQR(scannedText);
+                  }
+                }} 
+                onError={(error) => console.log("Scanner Error:", error?.message)}
                 constraints={{ 
                   facingMode: 'environment', 
                   width: { ideal: 1280 },    
