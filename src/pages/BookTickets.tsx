@@ -42,9 +42,8 @@ export default function BookTickets() {
   const [dbBookings, setDbBookings] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [isLoadingEdit, setIsLoadingEdit] = useState(!!editId); // Loading state untuk edit
+  const [isLoadingEdit, setIsLoadingEdit] = useState(!!editId); 
   
-  // State untuk menyimpan URL file lama jika tidak di-update
   const [existingProofUrl, setExistingProofUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -63,23 +62,24 @@ export default function BookTickets() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [proofFile, setProofFile] = useState<File | null>(null);
 
-  // 1. Tarik Data Ketersediaan Kursi
-  useEffect(() => {
-    const fetchReservedSeats = async () => {
-      try {
-        const { data, error } = await supabase.from('tickets').select('id, seat_numbers');
-        if (error) throw error;
-        if (data) {
-          const formatted = data.map((row: any) => ({
-            id: row.id,
-            seatNumbers: row.seat_numbers || []
-          }));
-          setDbBookings(formatted);
-        }
-      } catch (error) {
-        console.error("Gagal mengambil data kursi terblokir:", error);
+  // 1. Tarik Data Ketersediaan Kursi (Dipisah agar bisa dipanggil ulang saat race condition)
+  const fetchReservedSeats = async () => {
+    try {
+      const { data, error } = await supabase.from('tickets').select('id, seat_numbers');
+      if (error) throw error;
+      if (data) {
+        const formatted = data.map((row: any) => ({
+          id: row.id,
+          seatNumbers: row.seat_numbers || []
+        }));
+        setDbBookings(formatted);
       }
-    };
+    } catch (error) {
+      console.error("Gagal mengambil data kursi terblokir:", error);
+    }
+  };
+
+  useEffect(() => {
     fetchReservedSeats();
   }, []);
 
@@ -110,7 +110,7 @@ export default function BookTickets() {
             settlementDate: data.settlement_date || '',
           });
           setSelectedSeats(data.seat_numbers || []);
-          setExistingProofUrl(data.payment_proof_url); // Simpan URL lama
+          setExistingProofUrl(data.payment_proof_url);
         }
       } catch (error) {
         console.error("Gagal menarik data edit:", error);
@@ -148,7 +148,6 @@ export default function BookTickets() {
       return;
     }
 
-    // Pengecekan Khusus File PDF (Browser tidak bisa mengompres PDF)
     if (file.type === 'application/pdf') {
       if (file.size > 2 * 1024 * 1024) {
         alert("Uh oh! Ukuran PDF maksimal 2MB. Silahkan perkecil file PDF Anda atau gunakan format gambar (JPG/PNG).");
@@ -159,29 +158,23 @@ export default function BookTickets() {
       return;
     }
 
-    // Logika Kompresi untuk Gambar (JPG/PNG/WEBP)
     if (file.size > 2 * 1024 * 1024) {
-      setIsCompressing(true); // Nyalakan efek loading
+      setIsCompressing(true); 
       
       try {
         const options = {
-          maxSizeMB: 1.8,          // Target ukuran maksimal (dibuat 1.8MB sebagai batas aman)
-          maxWidthOrHeight: 1920,  // Resolusi maksimal yang wajar agar tetap bisa dibaca
-          useWebWorker: true,      // Menggunakan thread browser terpisah agar UI tidak freeze
+          maxSizeMB: 1.8,          
+          maxWidthOrHeight: 1920,  
+          useWebWorker: true,      
         };
 
-        console.log(`Ukuran asli: ${(file.size / 1024 / 1024).toFixed(2)} MB. Sedang mengompres...`);
-        
-        // Proses kompresi
         const compressedBlob = await imageCompression(file, options);
         
-        // Ubah Blob kembali menjadi File object agar nama aslinya tetap ada
         const compressedFile = new File([compressedBlob], file.name, {
           type: compressedBlob.type,
           lastModified: Date.now(),
         });
 
-        console.log(`Ukuran setelah kompres: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB.`);
         setProofFile(compressedFile);
         
       } catch (error) {
@@ -189,10 +182,9 @@ export default function BookTickets() {
         alert("Terjadi kesalahan saat memproses gambar. Silahkan coba gambar lain.");
         e.target.value = '';
       } finally {
-        setIsCompressing(false); // Matikan efek loading
+        setIsCompressing(false); 
       }
     } else {
-      // Jika ukuran sudah di bawah 2MB dari awal, langsung simpan
       setProofFile(file);
     }
   };
@@ -207,7 +199,34 @@ export default function BookTickets() {
     setIsSubmitting(true); 
 
     try {
-      let finalPaymentProofUrl = existingProofUrl; // Default ke file lama (jika ada)
+      // =====================================================================
+      // 🛡️ RACE CONDITION CHECK: Cek ulang ke DB sebelum eksekusi lanjutan
+      // =====================================================================
+      const { data: latestTickets, error: checkError } = await supabase
+        .from('tickets')
+        .select('id, seat_numbers');
+
+      if (checkError) throw checkError;
+
+      const currentlyBookedSeats = new Set<string>();
+      latestTickets.forEach(t => {
+        if (editId && t.id === editId) return; 
+        t.seat_numbers?.forEach((s: string) => currentlyBookedSeats.add(s));
+      });
+
+      const conflictSeats = selectedSeats.filter(seat => currentlyBookedSeats.has(seat));
+
+      if (conflictSeats.length > 0) {
+        alert(`🚨 KEDULUAN ORANG LAIN!\n\nMaaf, kursi ${conflictSeats.join(', ')} baru saja dipesan oleh orang lain beberapa detik yang lalu.\n\nSistem akan memperbarui peta kursi. Silakan pilih kursi yang lain.`);
+        
+        setIsSubmitting(false);
+        setSelectedSeats([]); 
+        await fetchReservedSeats(); 
+        return; 
+      }
+      // =====================================================================
+
+      let finalPaymentProofUrl = existingProofUrl; 
 
       if (proofFile) {
         const fileExt = proofFile.name.split('.').pop();
@@ -423,7 +442,6 @@ export default function BookTickets() {
                         </div>
                       </>
                     ) : existingProofUrl ? (
-                      /* ... (Kode existingProofUrl Anda tetap sama) ... */
                       <>
                         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
                           <Check className="w-5 h-5 text-blue-500" />
@@ -464,9 +482,11 @@ export default function BookTickets() {
             </CardContent>
           </Card>
 
-          <Button type="submit" disabled={isSubmitting} className="w-full h-14 text-lg font-bold">
+          <Button type="submit" disabled={isSubmitting || isCompressing} className="w-full h-14 text-lg font-bold">
             {isSubmitting ? (
               <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Mengunggah...</>
+            ) : isCompressing ? (
+              <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memproses Foto...</>
             ) : (
               <>{editId ? "Simpan Perubahan" : "Konfirmasi Pesanan"} - {formatRupiah(totalPrice)}</>
             )}
@@ -498,7 +518,7 @@ export default function BookTickets() {
               ))}
             </div>
 
-            {/* Seat Grid DIPINDAHKAN KE ATAS */}
+            {/* Seat Grid */}
             <div className="flex flex-col items-center justify-center gap-3 w-full">
               {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                 const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
@@ -535,7 +555,7 @@ export default function BookTickets() {
               })}
             </div>
 
-            {/* Screen Divider DIPINDAHKAN KE BAWAH */}
+            {/* Screen Divider */}
             <div className="w-full border-t-[8px] border-amber-500/20 mt-12 relative flex justify-center">
               <span className="absolute -top-3 bg-[#111111] px-4 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
               <div className="absolute bottom-0 w-3/4 h-32 bg-gradient-to-t from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
