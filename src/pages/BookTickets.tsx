@@ -6,6 +6,7 @@ import { formatRupiah, cn } from '@/utils';
 import { Check, Upload, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import imageCompression from 'browser-image-compression';
 
 const sortSeats = (seats: string[]) => {
   return [...seats].sort((a, b) => {
@@ -40,6 +41,7 @@ export default function BookTickets() {
 
   const [dbBookings, setDbBookings] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [isLoadingEdit, setIsLoadingEdit] = useState(!!editId); // Loading state untuk edit
   
   // State untuk menyimpan URL file lama jika tidak di-update
@@ -139,18 +141,60 @@ export default function BookTickets() {
     );
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
       setProofFile(null);
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Uh oh! Ukuran file maksimal 2MB. Silahkan compress foto Anda atau pilih foto lain.");
-      e.target.value = '';
+
+    // Pengecekan Khusus File PDF (Browser tidak bisa mengompres PDF)
+    if (file.type === 'application/pdf') {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Uh oh! Ukuran PDF maksimal 2MB. Silahkan perkecil file PDF Anda atau gunakan format gambar (JPG/PNG).");
+        e.target.value = '';
+      } else {
+        setProofFile(file);
+      }
       return;
     }
-    setProofFile(file);
+
+    // Logika Kompresi untuk Gambar (JPG/PNG/WEBP)
+    if (file.size > 2 * 1024 * 1024) {
+      setIsCompressing(true); // Nyalakan efek loading
+      
+      try {
+        const options = {
+          maxSizeMB: 1.8,          // Target ukuran maksimal (dibuat 1.8MB sebagai batas aman)
+          maxWidthOrHeight: 1920,  // Resolusi maksimal yang wajar agar tetap bisa dibaca
+          useWebWorker: true,      // Menggunakan thread browser terpisah agar UI tidak freeze
+        };
+
+        console.log(`Ukuran asli: ${(file.size / 1024 / 1024).toFixed(2)} MB. Sedang mengompres...`);
+        
+        // Proses kompresi
+        const compressedBlob = await imageCompression(file, options);
+        
+        // Ubah Blob kembali menjadi File object agar nama aslinya tetap ada
+        const compressedFile = new File([compressedBlob], file.name, {
+          type: compressedBlob.type,
+          lastModified: Date.now(),
+        });
+
+        console.log(`Ukuran setelah kompres: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB.`);
+        setProofFile(compressedFile);
+        
+      } catch (error) {
+        console.error("Gagal mengompres gambar:", error);
+        alert("Terjadi kesalahan saat memproses gambar. Silahkan coba gambar lain.");
+        e.target.value = '';
+      } finally {
+        setIsCompressing(false); // Matikan efek loading
+      }
+    } else {
+      // Jika ukuran sudah di bawah 2MB dari awal, langsung simpan
+      setProofFile(file);
+    }
   };
 
   const totalPrice = selectedSeats.length * currentTypeInfo.price;
@@ -362,7 +406,13 @@ export default function BookTickets() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
                   <div className="flex flex-col items-center justify-center text-center gap-2">
-                    {proofFile ? (
+                    {isCompressing ? (
+                      <>
+                        <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-2" />
+                        <p className="text-sm text-amber-500 font-medium animate-pulse">Mengompres gambar...</p>
+                        <p className="text-[10px] text-gray-500">Mohon tunggu sebentar</p>
+                      </>
+                    ) : proofFile ? (
                       <>
                         <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/30">
                           <Check className="w-5 h-5 text-green-500" />
@@ -373,6 +423,7 @@ export default function BookTickets() {
                         </div>
                       </>
                     ) : existingProofUrl ? (
+                      /* ... (Kode existingProofUrl Anda tetap sama) ... */
                       <>
                         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
                           <Check className="w-5 h-5 text-blue-500" />

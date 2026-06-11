@@ -309,7 +309,7 @@ Salam hormat,
                  <Film className="w-8 h-8" />
                </div>
                <h1 className="text-4xl font-display font-bold uppercase tracking-widest text-white mb-2">Cine<span className="text-amber-500">matix</span></h1>
-               <p className="text-gray-400 tracking-widest font-mono text-sm uppercase">Nonton Bareng Event 2026</p>
+               <p className="text-gray-400 tracking-widest font-mono text-sm uppercase">Nonton Bareng GPI 2026</p>
              </div>
 
              <div className="mb-8">
