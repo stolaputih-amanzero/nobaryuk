@@ -72,7 +72,7 @@ export default function HomePage() {
           
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider mb-4 md:mb-6 w-max">
             <Film className="w-4 h-4" />
-            <span>Nonton Bareng Event 2026</span>
+            <span>Nonton Bareng GPI 2026</span>
           </div>
           
           {/* PERBAIKAN: Menurunkan ukuran font di HP (text-4xl) agar tidak memicu pemotongan baris (clipping) */}
