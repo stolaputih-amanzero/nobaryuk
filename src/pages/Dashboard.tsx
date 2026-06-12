@@ -5,28 +5,27 @@ import { formatRupiah } from '@/utils';
 import { format, differenceInDays } from 'date-fns';
 import { AlertTriangle, CheckCircle2, TrendingUp, Users, DollarSign, Ticket, Loader2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../supabaseClient'; // Import Supabase Client
+import { supabase } from '../supabaseClient'; 
 import { Button } from '@/components/ui/Button';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function Dashboard() {
-  // Kita ubah state bookings agar mengambil dari Supabase, bukan AppContext
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
- const showDate = new Date('2026-07-11T11:30:00+07:00');
+  const showDate = new Date('2026-07-11T11:30:00+07:00');
 
-  // Mengambil data tiket dari Supabase saat halaman Dashboard dimuat
   useEffect(() => {
     const fetchTickets = async () => {
       try {
         const { data, error } = await supabase
           .from('tickets')
           .select('*')
-          .order('created_at', { ascending: false }); // Tampilkan dari yang paling baru
+          .order('created_at', { ascending: false }); 
 
         if (error) throw error;
 
-        // Cocokkan nama kolom database (snake_case) ke format React (camelCase)
         const formattedData = data.map((row: any) => ({
           id: row.id,
           buyerName: row.buyer_name,
@@ -36,7 +35,6 @@ export default function Dashboard() {
           paymentMethod: row.payment_method,
           paymentTenor: row.payment_tenor,
           totalPrice: row.total_price,
-          // Kalkulasi modal (cost) berdasarkan tipe kursi dan jumlahnya
           totalCost: (PRICING[row.seat_type as SeatType]?.cost || 0) * (row.seat_numbers?.length || 0),
           verified: row.is_verified,
           purchaseDate: row.purchase_date,
@@ -54,7 +52,6 @@ export default function Dashboard() {
     fetchTickets();
   }, []);
   
-  // Analytics - Tetap menggunakan logika aslimu, tapi kini bersumber dari database
   const stats = useMemo(() => {
     let revenue = 0;
     let cost = 0;
@@ -85,7 +82,6 @@ export default function Dashboard() {
   const costH7 = stats.cost * 0.5;
   const daysUntilShow = differenceInDays(showDate, new Date());
   
-  // Warning computations
   const needs50PercentPayment = daysUntilShow <= 7 && daysUntilShow > 3;
   const needsFullPayment = daysUntilShow <= 3;
 
@@ -99,11 +95,11 @@ export default function Dashboard() {
       </div>
 
       <Button 
-  onClick={() => downloadAllBookingsPDF(bookings)} // 'bookings' atau 'tickets' adalah state array data Anda
-  className="bg-amber-500 hover:bg-amber-600 text-black font-bold whitespace-nowrap"
->
-  <FileText className="w-4 h-4 mr-2" /> Cetak Manifes Booking
-</Button>
+        onClick={() => downloadAllBookingsPDF(bookings)} 
+        className="bg-amber-500 hover:bg-amber-600 text-black font-bold whitespace-nowrap"
+      >
+        <FileText className="w-4 h-4 mr-2" /> Cetak Manifes Booking
+      </Button>
 
       {/* Alert Banners */}
       {needs50PercentPayment && (
@@ -269,11 +265,7 @@ function MetricCard({ title, value, icon, className = "" }: { title: string; val
   );
 }
 
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 const downloadAllBookingsPDF = (allTickets: any[]) => {
-  // 1. Inisialisasi PDF format Landscape ('l') agar area kerja lebih lebar (297mm)
   const pdf = new jsPDF('l', 'mm', 'a4');
   const today = new Date().toLocaleDateString('id-ID', {
     day: 'numeric',
@@ -281,9 +273,9 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
     year: 'numeric'
   });
 
-  // 2. DESAIN HEADER LAPORAN (Warna Hitam & Amber Khas Cinematix)
+  // 1. DESAIN HEADER LAPORAN
   pdf.setFillColor(10, 10, 10);
-  pdf.rect(0, 0, 297, 35, 'F'); // Lebar penuh kertas A4 Landscape
+  pdf.rect(0, 0, 297, 35, 'F'); 
 
   pdf.setTextColor(255, 255, 255);
   pdf.setFont('Helvetica', 'bold');
@@ -292,95 +284,116 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
 
   pdf.setFont('Helvetica', 'normal');
   pdf.setFontSize(10);
-  pdf.setTextColor(245, 158, 11); // Warna Amber
+  pdf.setTextColor(245, 158, 11); 
   pdf.text('Laporan Manifes Pemesanan Tiket & Rekapitulasi Finansial', 15, 22);
 
   pdf.setTextColor(150, 150, 150);
   pdf.text(`Tanggal Cetak: ${today}`, 240, 22);
 
-  // 3. HITUNG RINGKASAN DATA & FINANSIAL
+  // 2. HITUNG RINGKASAN DATA & FINANSIAL
   const totalTiket = allTickets.length;
   
-  // Menghitung total kursi yang terjual dari semua tiket
-  const totalKursi = allTickets.reduce((acc, current) => acc + (current.seatNumbers?.length || 0), 0);
+  // Total kursi yang terjual
+  const totalKursiTerjual = allTickets.reduce((acc, current) => acc + (current.seatNumbers?.length || 0), 0);
   
-  // Menghitung total uang masuk (hanya dari tiket yang sudah diverifikasi/Lunas)
-  const totalPendapatan = allTickets
-    .filter(t => t.verified)
-    .reduce((acc, current) => acc + (current.totalPrice || 0), 0);
+  // MENGHITUNG TOTAL KAPASITAS (Tersedia vs Terjual)
+  let totalKapasitas = 0;
+  try {
+    // Menjumlahkan capacity dari setiap kategori di PRICING
+    totalKapasitas = Object.values(PRICING).reduce((sum: number, type: any) => sum + (type.capacity || (type.rows * type.cols)), 0);
+  } catch (e) {
+    totalKapasitas = 150; // Angka cadangan jika PRICING gagal dimuat
+  }
+  const kursiTersedia = totalKapasitas - totalKursiTerjual;
 
-  // Fungsi pembantu untuk mengubah angka biasa menjadi Format Rupiah (IDR)
-  const formatRupiah = (angka: number) => {
-    return 'Rp ' + angka.toLocaleString('id-ID');
+  const totalPendapatan = allTickets
+    .filter(t => t.verified || t.is_verified)
+    .reduce((acc, current) => acc + (current.totalPrice || current.total_price || 0), 0);
+
+  const formatRupiahLocal = (angka: number) => {
+    return 'Rp ' + (angka || 0).toLocaleString('id-ID');
   };
 
-  // 4. KOTAK STATISTIK MANIFES
+  // 3. KOTAK STATISTIK MANIFES
   pdf.setFillColor(245, 245, 245);
   pdf.rect(15, 42, 267, 18, 'F');
 
   pdf.setTextColor(50, 50, 50);
   pdf.setFont('Helvetica', 'bold');
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   
   pdf.text(`Total Pemesanan: ${totalTiket} Tiket`, 20, 53);
-  pdf.text(`Total Kursi Terisi: ${totalKursi} Kursi`, 90, 53);
-  // Contoh Hasil: Total Pendapatan (Lunas): Rp 4.500.000
-  pdf.text(`Total Pendapatan (Lunas): ${formatRupiah(totalPendapatan)}`, 160, 53);
+  pdf.text(`Kursi Terjual: ${totalKursiTerjual} | Tersedia: ${kursiTersedia} | Kapasitas: ${totalKapasitas}`, 75, 53);
+  pdf.text(`Total Pendapatan (Lunas): ${formatRupiahLocal(totalPendapatan)}`, 190, 53);
 
-  // 5. FORMATTING BARIS DATA UNTUK TABEL
+  // 4. FORMATTING BARIS DATA UNTUK TABEL
   const tableRows = allTickets.map((ticket, index) => {
+    // Memformat Tanggal Pembelian agar rapi
+    let formattedDate = '-';
+    const rawDate = ticket.purchaseDate || ticket.purchase_date;
+    if (rawDate) {
+      const d = new Date(rawDate);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      } else {
+        formattedDate = rawDate;
+      }
+    }
+
     return [
       index + 1,
-      ticket.id.toUpperCase().substring(0, 8), // Ambil 8 karakter depan ID saja agar rapi
-      ticket.buyerName,
+      formattedDate,
+      ticket.id.toUpperCase().substring(0, 8),
+      ticket.buyerName || ticket.buyer_name,
       ticket.seatNumbers?.join(', ') || '-',
-      formatRupiah(ticket.totalPrice || 0),
-      ticket.paymentMethod ? `${ticket.paymentMethod} ${ticket.paymentTenor ? `(${ticket.paymentTenor})` : ''}` : '-',
-      ticket.marketingName || '-',
-      ticket.verified ? 'LUNAS' : 'PENDING'
+      formatRupiahLocal(ticket.totalPrice || ticket.total_price || 0),
+      ticket.paymentMethod ? `${ticket.paymentMethod}` : '-',
+      ticket.marketingName || ticket.marketing_name || '-',
+      ticket.verified || ticket.is_verified ? 'LUNAS' : 'PENDING'
     ];
   });
 
-  // 6. RENDER TABEL MENGGUNAKAN AUTOTABLE
+  // 5. RENDER TABEL MENGGUNAKAN AUTOTABLE
   autoTable(pdf, {
     startY: 68,
-    head: [['No', 'ID Tiket', 'Nama Pembeli', 'Kursi', 'Total Harga', 'Metode Bayar', 'Marketing', 'Status']],
+    head: [['No', 'Tgl Beli', 'ID Tiket', 'Nama Pembeli', 'Kursi', 'Total Harga', 'Metode Bayar', 'Marketing', 'Status']],
     body: tableRows,
     theme: 'striped',
     headStyles: {
-      fillColor: [20, 20, 20],      // Warna background header tabel hitam solid
-      textColor: [245, 158, 11],     // Teks header tabel warna amber
+      fillColor: [20, 20, 20],      
+      textColor: [245, 158, 11],     
       fontStyle: 'bold',
-      fontSize: 9
+      fontSize: 8 
     },
     styles: {
-      fontSize: 9,
+      fontSize: 8,
       cellPadding: 3
     },
     columnStyles: {
       0: { cellWidth: 10 },  // No
-      1: { cellWidth: 25 },  // ID Tiket
-      2: { cellWidth: 55 },  // Nama Pembeli
-      3: { cellWidth: 35 },  // Kursi
-      4: { cellWidth: 35 },  // Total Harga
-      5: { cellWidth: 45 },  // Metode Bayar
-      6: { cellWidth: 35 },  // Marketing
-      7: { cellWidth: 27 }   // Status
+      1: { cellWidth: 22 },  // Tgl Beli 
+      2: { cellWidth: 22 },  // ID Tiket
+      3: { cellWidth: 46 },  // Nama Pembeli
+      4: { cellWidth: 35 },  // Kursi
+      5: { cellWidth: 28 },  // Total Harga
+      6: { cellWidth: 35 },  // Metode Bayar
+      7: { cellWidth: 39 },  // Marketing
+      8: { cellWidth: 30 }   // Status
     },
     didParseCell: (data) => {
-      // Memberi warna khusus pada kolom Status (Index 7)
-      if (data.section === 'body' && data.column.index === 7) {
+      // Memberi warna khusus pada kolom Status (sekarang Index 8)
+      if (data.section === 'body' && data.column.index === 8) {
         if (data.cell.raw === 'LUNAS') {
-          data.cell.styles.textColor = [34, 197, 94]; // Hijau untuk sukses
+          data.cell.styles.textColor = [34, 197, 94]; 
           data.cell.styles.fontStyle = 'bold';
         } else {
-          data.cell.styles.textColor = [234, 179, 8];  // Kuning/Amber tua untuk pending
+          data.cell.styles.textColor = [234, 179, 8]; 
           data.cell.styles.fontStyle = 'bold';
         }
       }
     }
   });
 
-  // 7. DOWNLOAD FILE PDF
+  // 6. DOWNLOAD FILE PDF
   pdf.save(`Laporan_Manifes_Booking_Cinematix_${new Date().toISOString().split('T')[0]}.pdf`);
 };
