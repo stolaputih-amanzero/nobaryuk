@@ -290,20 +290,33 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
   pdf.setTextColor(150, 150, 150);
   pdf.text(`Tanggal Cetak: ${today}`, 240, 22);
 
-  // 2. HITUNG RINGKASAN DATA & FINANSIAL
+  // 2. HITUNG RINGKASAN DATA & FINANSIAL PER KLASIFIKASI
   const totalTiket = allTickets.length;
   
-  // Total kursi yang terjual
-  const totalKursiTerjual = allTickets.reduce((acc, current) => acc + (current.seatNumbers?.length || 0), 0);
-  
-  // MENGHITUNG TOTAL KAPASITAS (Tersedia vs Terjual)
-  let totalKapasitas = 0;
-  try {
-    // Menjumlahkan capacity dari setiap kategori di PRICING
-    totalKapasitas = Object.values(PRICING).reduce((sum: number, type: any) => sum + (type.capacity || (type.rows * type.cols)), 0);
-  } catch (e) {
-    totalKapasitas = 150; // Angka cadangan jika PRICING gagal dimuat
-  }
+  // Mengelompokkan rincian kapasitas dan terjual per kategori kursi
+  // Menggunakan fallback (rows * cols) jika property capacity tidak ditulis eksplisit
+  const statsPerType: Record<string, { sold: number, cap: number }> = {
+    'Reguler - Depan': { sold: 0, cap: PRICING['Reguler - Depan']?.capacity || (PRICING['Reguler - Depan']?.rows * PRICING['Reguler - Depan']?.cols) || 0 },
+    'Reguler - Tengah': { sold: 0, cap: PRICING['Reguler - Tengah']?.capacity || (PRICING['Reguler - Tengah']?.rows * PRICING['Reguler - Tengah']?.cols) || 0 },
+    'Reguler - Belakang': { sold: 0, cap: PRICING['Reguler - Belakang']?.capacity || (PRICING['Reguler - Belakang']?.rows * PRICING['Reguler - Belakang']?.cols) || 0 },
+    'VIP': { sold: 0, cap: PRICING['VIP']?.capacity || (PRICING['VIP']?.rows * PRICING['VIP']?.cols) || 0 }
+  };
+
+  let totalKursiTerjual = 0;
+
+  // Menghitung jumlah kursi terjual untuk setiap tipe
+  allTickets.forEach(t => {
+    const type = t.seatType || t.seat_type;
+    const count = t.seatNumbers?.length || 0;
+    
+    totalKursiTerjual += count;
+    
+    if (statsPerType[type]) {
+      statsPerType[type].sold += count;
+    }
+  });
+
+  const totalKapasitas = Object.values(statsPerType).reduce((sum, item) => sum + item.cap, 0);
   const kursiTersedia = totalKapasitas - totalKursiTerjual;
 
   const totalPendapatan = allTickets
@@ -314,27 +327,44 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
     return 'Rp ' + (angka || 0).toLocaleString('id-ID');
   };
 
-  // 3. KOTAK STATISTIK MANIFES
+  // 3. KOTAK STATISTIK MANIFES (Diperlebar menjadi 26mm)
   pdf.setFillColor(245, 245, 245);
-  pdf.rect(15, 42, 267, 18, 'F');
+  pdf.rect(15, 42, 267, 26, 'F'); 
 
   pdf.setTextColor(50, 50, 50);
   pdf.setFont('Helvetica', 'bold');
   pdf.setFontSize(9);
   
-  pdf.text(`Total Pemesanan: ${totalTiket} Tiket`, 20, 53);
-  pdf.text(`Kursi Terjual: ${totalKursiTerjual} | Tersedia: ${kursiTersedia} | Kapasitas: ${totalKapasitas}`, 75, 53);
-  pdf.text(`Total Pendapatan (Lunas): ${formatRupiahLocal(totalPendapatan)}`, 190, 53);
+  // Baris 1: Ringkasan Tiket & Pendapatan
+  pdf.text(`Total Pemesanan: ${totalTiket} Tiket`, 20, 48);
+  pdf.text(`Total Pendapatan (Lunas): ${formatRupiahLocal(totalPendapatan)}`, 190, 48);
+
+  // Baris 2: Ringkasan Global
+  pdf.text(`Ringkasan Global:`, 20, 55);
+  pdf.setFont('Helvetica', 'normal');
+  pdf.text(`Terjual: ${totalKursiTerjual} Kursi   |   Tersedia: ${kursiTersedia} Kursi   |   Total Kapasitas: ${totalKapasitas} Kursi`, 50, 55);
+
+  // Baris 3: Rincian per Klasifikasi Kursi
+  pdf.setFont('Helvetica', 'bold');
+  pdf.text(`Rincian Kategori:`, 20, 62);
+  pdf.setFont('Helvetica', 'normal');
+  
+  const d = statsPerType['Reguler - Depan'];
+  const t = statsPerType['Reguler - Tengah'];
+  const b = statsPerType['Reguler - Belakang'];
+  const v = statsPerType['VIP'];
+  
+  // Contoh Hasil: Depan (12/20) • Tengah (30/50) • Belakang (15/30) • VIP (5/10)
+  pdf.text(`Depan (${d.sold}/${d.cap})   •   Tengah (${t.sold}/${t.cap})   •   Belakang (${b.sold}/${b.cap})   •   VIP (${v.sold}/${v.cap})`, 50, 62);
 
   // 4. FORMATTING BARIS DATA UNTUK TABEL
   const tableRows = allTickets.map((ticket, index) => {
-    // Memformat Tanggal Pembelian agar rapi
     let formattedDate = '-';
     const rawDate = ticket.purchaseDate || ticket.purchase_date;
     if (rawDate) {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        formattedDate = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const dateObj = new Date(rawDate);
+      if (!isNaN(dateObj.getTime())) {
+        formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
       } else {
         formattedDate = rawDate;
       }
@@ -353,9 +383,9 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
     ];
   });
 
-  // 5. RENDER TABEL MENGGUNAKAN AUTOTABLE
+  // 5. RENDER TABEL MENGGUNAKAN AUTOTABLE (Posisi Tabel Diturunkan ke Y: 74)
   autoTable(pdf, {
-    startY: 68,
+    startY: 74,
     head: [['No', 'Tgl Beli', 'ID Tiket', 'Nama Pembeli', 'Kursi', 'Total Harga', 'Metode Bayar', 'Marketing', 'Status']],
     body: tableRows,
     theme: 'striped',
@@ -370,18 +400,17 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
       cellPadding: 3
     },
     columnStyles: {
-      0: { cellWidth: 10 },  // No
-      1: { cellWidth: 22 },  // Tgl Beli 
-      2: { cellWidth: 22 },  // ID Tiket
-      3: { cellWidth: 46 },  // Nama Pembeli
-      4: { cellWidth: 35 },  // Kursi
-      5: { cellWidth: 28 },  // Total Harga
-      6: { cellWidth: 35 },  // Metode Bayar
-      7: { cellWidth: 39 },  // Marketing
-      8: { cellWidth: 30 }   // Status
+      0: { cellWidth: 10 },  
+      1: { cellWidth: 22 },   
+      2: { cellWidth: 22 },  
+      3: { cellWidth: 46 },  
+      4: { cellWidth: 35 },  
+      5: { cellWidth: 28 },  
+      6: { cellWidth: 35 },  
+      7: { cellWidth: 39 },  
+      8: { cellWidth: 30 }   
     },
     didParseCell: (data) => {
-      // Memberi warna khusus pada kolom Status (sekarang Index 8)
       if (data.section === 'body' && data.column.index === 8) {
         if (data.cell.raw === 'LUNAS') {
           data.cell.styles.textColor = [34, 197, 94]; 
