@@ -239,7 +239,8 @@ export default function Dashboard() {
                 )}
               </div>
             </CardHeader>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View (hidden on mobile) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-white/5 text-gray-400 uppercase text-[10px] tracking-wider border-y border-white/10 sticky top-0">
                   <tr>
@@ -288,6 +289,56 @@ export default function Dashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Cards View (shown on mobile, hidden on desktop) */}
+            <div className="block md:hidden divide-y divide-white/5">
+              {filteredBookings.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">
+                  {bookings.length === 0 ? "Tidak ada data penjualan tiket." : "Tidak ada tiket yang cocok dengan pencarian Anda."}
+                </div>
+              ) : (
+                filteredBookings.map((b) => (
+                  <div key={b.id} className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-gray-200 text-base">{b.buyerName}</div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">Beli: {b.purchaseDate || '-'}</div>
+                        {b.settlementDate && <div className="text-[10px] text-green-500/70 font-mono">Lunas: {b.settlementDate}</div>}
+                      </div>
+                      <Link to={`/ticket/${b.id}`}>
+                        <Button variant="outline" className="h-8 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10">
+                          Tiket
+                        </Button>
+                      </Link>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[10px] font-bold">
+                        {b.seatNumbers.join(', ')}
+                      </span>
+                      {b.verified ? (
+                        <span className="bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded text-[10px] font-bold">
+                          Lunas ({b.paymentTenor})
+                        </span>
+                      ) : (
+                        <span className="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">
+                          Pending ({b.paymentTenor})
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1 text-xs">
+                      <div className="text-gray-400">
+                        Marketing: <span className="text-gray-300 font-medium">{b.marketingName}</span>
+                      </div>
+                      <div className="font-mono font-bold text-amber-500 text-sm">
+                        {formatRupiah(b.totalPrice)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </>
