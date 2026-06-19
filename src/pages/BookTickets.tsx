@@ -364,7 +364,7 @@ export default function BookTickets() {
       <div className="flex flex-col lg:flex-row gap-8">
         
         {/* Form Sidebar */}
-        <div className="w-full lg:w-1/3 shrink-0 order-2 lg:order-1 space-y-6">
+        <div className="w-full lg:w-1/3 shrink-0 order-1 lg:order-1 space-y-6">
         <div>
           <h1 className="text-3xl font-display font-bold mb-2">{editId ? "Edit Tiket" : "Form Data Tiket"}</h1>
           <p className="text-gray-400">{editId ? "Update detail dan pemilihan kursi untuk tiket ini." : "Masukan data diri donatur atau pembeli tiket dengan lengkap."}</p>
@@ -537,7 +537,7 @@ export default function BookTickets() {
       </div>
 
       {/* Seat Selection Panel */}
-      <div className="w-full lg:w-2/3 order-1 lg:order-2">
+      <div className="w-full lg:w-2/3 order-2 lg:order-2">
         <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5">
           <CardContent className="p-6">
             
@@ -560,41 +560,43 @@ export default function BookTickets() {
               ))}
             </div>
 
-            {/* Seat Grid */}
-            <div className="flex flex-col items-center justify-center gap-3 w-full">
-              {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
-                const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
-                return (
-                <div key={rIndex} className="flex flex-wrap justify-center gap-2">
-                  <div className="w-8 shrink-0 flex items-center justify-center text-gray-500 font-mono text-sm mr-2">{rowLetter}</div>
-                  {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
-                    const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
-                    const isBooked = unavailableSeats.has(seatId);
-                    const isSelected = selectedSeats.includes(seatId);
-                    
-                    return (
-                      <button
-                        key={seatId}
-                        type="button"
-                        onClick={() => handleSeatClick(seatId)}
-                        disabled={isBooked}
-                        title={seatId}
-                        className={cn(
-                          "w-6 h-6 md:w-8 md:h-8 rounded-t-lg rounded-b flex items-center justify-center text-[10px] sm:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
-                          isBooked 
-                           ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
-                           : isSelected 
-                            ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
-                            : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
-                        )}
-                      >
-                         {cIndex + 1}
-                      </button>
-                    )
-                  })}
-                </div>
-                );
-              })}
+            {/* Seat Grid Scroll Wrapper */}
+            <div className="w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              <div className="flex flex-col items-center justify-center gap-3 min-w-max px-4">
+                {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
+                  const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
+                  return (
+                  <div key={rIndex} className="flex flex-nowrap justify-center gap-2">
+                    <div className="w-8 shrink-0 flex items-center justify-center text-gray-500 font-mono text-sm mr-2">{rowLetter}</div>
+                    {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
+                      const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
+                      const isBooked = unavailableSeats.has(seatId);
+                      const isSelected = selectedSeats.includes(seatId);
+                      
+                      return (
+                        <button
+                          key={seatId}
+                          type="button"
+                          onClick={() => handleSeatClick(seatId)}
+                          disabled={isBooked}
+                          title={seatId}
+                          className={cn(
+                            "w-6 h-6 md:w-8 md:h-8 rounded-t-lg rounded-b flex items-center justify-center text-[10px] sm:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
+                            isBooked 
+                             ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
+                             : isSelected 
+                              ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
+                              : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                          )}
+                        >
+                           {cIndex + 1}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Screen Divider */}
