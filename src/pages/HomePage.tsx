@@ -84,14 +84,14 @@ export default function HomePage() {
             {movie ? movie.synopsis : "Memuat sinopsis film dari database..."}
           </p>
           
-          <div className="flex flex-wrap gap-3">
-            <Link to="/book">
-              <Button className="h-10 px-8 text-xs rounded-full bg-amber-500 text-black">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 w-full sm:w-auto">
+            <Link to="/book" className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto h-10 px-8 text-xs rounded-full bg-amber-500 text-black">
                 Booking Tiket
               </Button>
             </Link>
-            <a href="https://id.wikipedia.org/wiki/Children_of_Heaven" target="_blank" rel="noreferrer">
-              <Button variant="outline" className="h-10 px-6 rounded-full uppercase tracking-wider text-[10px] border-white/20">
+            <a href="https://id.wikipedia.org/wiki/Children_of_Heaven" target="_blank" rel="noreferrer" className="w-full sm:w-auto">
+              <Button variant="outline" className="w-full sm:w-auto h-10 px-6 rounded-full uppercase tracking-wider text-[10px] border-white/20">
                 <ExternalLink className="w-4 h-4 mr-2" /> Detail Film
               </Button>
             </a>
