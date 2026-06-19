@@ -96,6 +96,28 @@ export default function HomePage() {
               </Button>
             </a>
           </div>
+
+          {/* Running Text */}
+          <div className="mt-6 overflow-hidden w-full max-w-2xl bg-amber-500/5 rounded-full border border-amber-500/20 py-2 text-amber-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest font-display backdrop-blur-sm">
+            <div className="animate-marquee-container flex gap-8">
+              <div className="flex gap-8 shrink-0">
+                <span>🎟️ Klik tombol di atas untuk memulai booking tiket nonton bareng sekarang juga!</span>
+                <span>•</span>
+                <span>Amankan kursi terbaik Anda sebelum kehabisan!</span>
+                <span>•</span>
+                <span>Nobar Children of Heaven 2026</span>
+                <span>•</span>
+              </div>
+              <div className="flex gap-8 shrink-0">
+                <span>🎟️ Klik tombol di atas untuk memulai booking tiket nonton bareng sekarang juga!</span>
+                <span>•</span>
+                <span>Amankan kursi terbaik Anda sebelum kehabisan!</span>
+                <span>•</span>
+                <span>Nobar Children of Heaven 2026</span>
+                <span>•</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
