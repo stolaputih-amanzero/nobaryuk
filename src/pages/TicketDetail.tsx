@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2, FileText, ExternalLink, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle, Clock, MapPin, Film, Edit, Trash2, Loader2, FileText, ExternalLink, MessageCircle, Lock } from 'lucide-react';
 import { cn } from '@/utils';
 import { supabase } from '../supabaseClient'; 
 
@@ -46,6 +46,37 @@ export default function TicketDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isAdminPINModalOpen, setIsAdminPINModalOpen] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const executeWithAuth = (action: () => void) => {
+    const isAdmin = localStorage.getItem('isAdminAuthenticated') === 'true';
+    if (isAdmin) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      setIsAdminPINModalOpen(true);
+      setPinInput('');
+      setPinError('');
+    }
+  };
+
+  const handleVerifyPIN = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPIN = (import.meta as any).env.VITE_ADMIN_PIN || '2906';
+    if (pinInput === correctPIN) {
+      localStorage.setItem('isAdminAuthenticated', 'true');
+      setIsAdminPINModalOpen(false);
+      if (pendingAction) {
+        pendingAction();
+        setPendingAction(null);
+      }
+    } else {
+      setPinError('PIN salah! Silakan coba lagi.');
+    }
+  };
 
   const backgroundImage = "/background.png";
 
@@ -113,34 +144,38 @@ export default function TicketDetail() {
     
     const nodeTicket = ticketRef.current;
     const nodeApresiasi = appreciationRef.current;
-    const parentNode = nodeTicket.parentElement;
-    
-    const originalWidth = nodeTicket.style.width;
-    const originalHeight = nodeTicket.style.height;
-    const originalParentOverflow = parentNode ? parentNode.style.overflow : '';
+
+    // Buat clone off-screen dari nodeTicket untuk mencegah pelebaran layar di mobile
+    const cloneTicket = nodeTicket.cloneNode(true) as HTMLDivElement;
+    cloneTicket.style.setProperty('width', '600px', 'important');
+    cloneTicket.style.setProperty('height', 'auto', 'important');
+    cloneTicket.style.setProperty('position', 'fixed', 'important');
+    cloneTicket.style.setProperty('left', '-9999px', 'important');
+    cloneTicket.style.setProperty('top', '0', 'important');
+    cloneTicket.style.setProperty('visibility', 'visible', 'important');
+    document.body.appendChild(cloneTicket);
 
     try {
-      nodeTicket.style.setProperty('width', '600px', 'important'); 
-      nodeTicket.style.setProperty('height', 'auto', 'important'); 
-      if (parentNode) {
-        parentNode.style.setProperty('overflow', 'visible', 'important');
-      }
-      
       // Tunggu render QR & Font
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const actualWidth = 600;
-      const ticketHeight = nodeTicket.offsetHeight; 
+      const ticketHeight = cloneTicket.offsetHeight; 
       const apresiasiHeight = 846; // Ukuran A4 Proporsional
 
-      // 1. Snapshot Halaman 1 (Tiket Utama)
-      const imgTicket = await toPng(nodeTicket, { 
+      // 1. Snapshot Halaman 1 (Tiket Utama) menggunakan clone
+      const imgTicket = await toPng(cloneTicket, { 
         backgroundColor: '#0A0A0A',
         pixelRatio: 2, 
         width: actualWidth,
         height: ticketHeight,
         style: { width: `${actualWidth}px`, height: `${ticketHeight}px`, margin: '0', transform: 'none' }
       });
+
+      // Bersihkan clone dari DOM setelah snapshot selesai
+      if (document.body.contains(cloneTicket)) {
+        document.body.removeChild(cloneTicket);
+      }
 
       // 2. Snapshot Halaman 2 (Apresiasi VIP Tersembunyi)
       const imgApresiasi = await toPng(nodeApresiasi, { 
@@ -150,13 +185,6 @@ export default function TicketDetail() {
         height: apresiasiHeight,
         style: { width: `${actualWidth}px`, height: `${apresiasiHeight}px`, margin: '0', transform: 'none' }
       });
-      
-      // Kembalikan Tampilan Website
-      nodeTicket.style.width = originalWidth;
-      nodeTicket.style.height = originalHeight;
-      if (parentNode) {
-        parentNode.style.overflow = originalParentOverflow;
-      }
 
       // 3. Susun ke dalam jsPDF
       const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [actualWidth, ticketHeight] });
@@ -171,10 +199,9 @@ export default function TicketDetail() {
       pdf.save(`Tiket_Nobar_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      nodeTicket.style.width = originalWidth;
-      nodeTicket.style.height = originalHeight;
-      if (parentNode) {
-        parentNode.style.overflow = originalParentOverflow;
+      // Bersihkan clone jika terjadi error
+      if (document.body.contains(cloneTicket)) {
+        document.body.removeChild(cloneTicket);
       }
       alert('Gagal membuat PDF. Silahkan coba lagi.');
     } finally {
@@ -247,7 +274,9 @@ Salam hormat,
     }
   };
 
-  const handleDelete = () => setIsDeleteDialogOpen(true);
+  const handleDelete = () => {
+    executeWithAuth(() => setIsDeleteDialogOpen(true));
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 pb-12 relative overflow-x-hidden">
@@ -258,16 +287,14 @@ Salam hormat,
           <ArrowLeft className="w-5 h-5" /> Kembali
         </Link>
         <div className="flex flex-wrap justify-center gap-3">
-           <Link to={`/book?edit=${ticket.id}`}>
-             <Button variant="outline" className="whitespace-nowrap border-white/10 text-white hover:bg-white/5">
-               <Edit className="w-4 h-4 mr-2" /> Edit Tiket
-             </Button>
-           </Link>
+           <Button variant="outline" onClick={() => executeWithAuth(() => navigate(`/book?edit=${ticket.id}`))} className="whitespace-nowrap border-white/10 text-white hover:bg-white/5">
+             <Edit className="w-4 h-4 mr-2" /> Edit Tiket
+           </Button>
            <Button variant="outline" onClick={handleDelete} className="whitespace-nowrap border-red-500/30 text-red-500 hover:bg-red-500/10">
              <Trash2 className="w-4 h-4 mr-2" /> Hapus
            </Button>
            {!ticket.verified && (
-             <Button variant="outline" onClick={verifyTicket} className="border-green-500/30 text-green-400 hover:bg-green-500/10 whitespace-nowrap">
+             <Button variant="outline" onClick={() => executeWithAuth(verifyTicket)} className="border-green-500/30 text-green-400 hover:bg-green-500/10 whitespace-nowrap">
                <CheckCircle className="w-4 h-4 mr-2" /> Tandai Lunas
              </Button>
            )}
@@ -450,6 +477,47 @@ Salam hormat,
           </div>
         </div>
       )}
+
+      {/* Modal PIN Admin */}
+      {isAdminPINModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+          <div className="bg-[#0f172a] border border-white/10 p-6 rounded-2xl max-w-sm w-full space-y-6">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/30 mx-auto mb-4">
+                <Lock className="w-6 h-6 text-amber-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Verifikasi Akses</h3>
+              <p className="text-gray-400 text-sm">Hanya pembuat tiket/admin yang dapat mengedit atau menghapus data tiket ini. Silakan masukkan PIN Admin.</p>
+            </div>
+            <form onSubmit={handleVerifyPIN} className="space-y-4">
+              <div>
+                <input 
+                  type="password"
+                  required
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinInput(e.target.value);
+                    setPinError('');
+                  }}
+                  className="w-full text-center bg-black border border-white/10 rounded-lg px-4 py-3 text-lg font-mono text-amber-500 tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="••••"
+                  maxLength={10}
+                />
+                {pinError && <p className="text-red-500 text-xs text-center mt-2">{pinError}</p>}
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" className="flex-1 border-white/10 hover:bg-white/5 text-white" onClick={() => setIsAdminPINModalOpen(false)}>
+                  Batal
+                </Button>
+                <Button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-600 border-none text-black font-bold">
+                  Verifikasi
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* ==================================================================
         HALAMAN 2 PDF (APRESIASI VIP) - DISEMBUNYIKAN DARI LAYAR WEBSITE 

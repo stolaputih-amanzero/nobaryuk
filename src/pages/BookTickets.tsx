@@ -87,6 +87,14 @@ export default function BookTickets() {
   useEffect(() => {
     const fetchEditData = async () => {
       if (!editId) return;
+
+      const isAdmin = localStorage.getItem('isAdminAuthenticated') === 'true';
+      if (!isAdmin) {
+        alert("Akses ditolak! Anda harus memasukkan PIN Admin di halaman detail tiket terlebih dahulu.");
+        navigate(`/ticket/${editId}`);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('tickets')
@@ -196,6 +204,15 @@ export default function BookTickets() {
     e.preventDefault();
     if (selectedSeats.length === 0) return alert("Pilih minimal 1 kursi!");
     
+    if (editId) {
+      const isAdmin = localStorage.getItem('isAdminAuthenticated') === 'true';
+      if (!isAdmin) {
+        alert("Akses ditolak! Aksi edit hanya untuk Admin.");
+        navigate(`/ticket/${editId}`);
+        return;
+      }
+    }
+
     setIsSubmitting(true); 
 
     try {
@@ -292,7 +309,7 @@ export default function BookTickets() {
             totalPrice,
             totalCost,
             paymentProofUrl: finalPaymentProofUrl,
-          });
+          } as any);
           navigate('/dashboard');
         }
       }
