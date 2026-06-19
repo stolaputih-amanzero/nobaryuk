@@ -34,8 +34,12 @@ function Navbar() {
               className="w-8 h-8 md:w-10 md:h-10 object-contain rounded-md"
             />
             {/* Hapus atau komentari span teks di bawah ini JIKA di dalam gambar logo-preview.png kamu sudah ada teks "Cinematix Elite"-nya */}
-            <span className="text-xl md:text-2xl font-bold font-display tracking-widest text-white">
+            <span className="text-xl md:text-2xl font-bold font-display tracking-widest text-white flex items-center gap-2">
               Cinematix <span className="text-amber-500">Elite</span>
+              <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest leading-none">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                LIVE
+              </span>
             </span>
           </Link>
           
