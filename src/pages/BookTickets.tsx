@@ -565,37 +565,33 @@ export default function BookTickets() {
               {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                 const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
                 return (
-                <div key={rIndex} className="flex flex-nowrap items-start sm:items-center w-full max-w-full justify-center">
-                  <div className="w-5 sm:w-8 shrink-0 flex items-center justify-center text-amber-500 sm:text-gray-500 font-mono text-xs sm:text-sm mr-2 mt-0.5 sm:mt-0 font-bold sm:font-normal">{rowLetter}</div>
-                  
-                  {/* Grid for seats to wrap automatically on mobile */}
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2 flex-1 max-w-2xl justify-start">
-                    {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
-                      const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
-                      const isBooked = unavailableSeats.has(seatId);
-                      const isSelected = selectedSeats.includes(seatId);
-                      
-                      return (
-                        <button
-                          key={seatId}
-                          type="button"
-                          onClick={() => handleSeatClick(seatId)}
-                          disabled={isBooked}
-                          title={seatId}
-                          className={cn(
-                            "w-[18px] h-[18px] sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-sm sm:rounded-t-lg sm:rounded-b-[1px] flex items-center justify-center text-[8px] sm:text-[10px] md:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed shrink-0",
-                            isBooked 
-                             ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
-                             : isSelected 
-                              ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
-                              : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
-                          )}
-                        >
-                           {cIndex + 1}
-                        </button>
-                      )
-                    })}
-                  </div>
+                <div key={rIndex} className="flex flex-wrap justify-center gap-1.5 sm:gap-2 max-w-2xl">
+                  <div className="w-6 sm:w-8 shrink-0 flex items-center justify-center text-amber-500 sm:text-gray-500 font-mono text-xs sm:text-sm mr-1 sm:mr-2 font-bold sm:font-normal">{rowLetter}</div>
+                  {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
+                    const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
+                    const isBooked = unavailableSeats.has(seatId);
+                    const isSelected = selectedSeats.includes(seatId);
+                    
+                    return (
+                      <button
+                        key={seatId}
+                        type="button"
+                        onClick={() => handleSeatClick(seatId)}
+                        disabled={isBooked}
+                        title={seatId}
+                        className={cn(
+                          "w-7 h-7 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-[3px] sm:rounded-t-lg sm:rounded-b-[1px] flex items-center justify-center text-[10px] sm:text-[10px] md:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed shrink-0",
+                          isBooked 
+                           ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
+                           : isSelected 
+                            ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
+                            : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                        )}
+                      >
+                         {cIndex + 1}
+                      </button>
+                    )
+                  })}
                 </div>
                 );
               })}
