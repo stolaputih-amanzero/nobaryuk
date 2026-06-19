@@ -343,7 +343,7 @@ export default function BookTickets() {
         <span className="shrink-0 bg-amber-500 text-black px-2 py-0.5 rounded text-[10px] font-extrabold animate-pulse">
           PETUNJUK
         </span>
-        <div className="overflow-hidden relative flex-1">
+        <div className="overflow-hidden relative flex-1 min-w-0">
           <div className="animate-marquee-container flex gap-8">
             <div className="flex gap-8 shrink-0">
               <span>👉 Silakan tentukan Kategori Kursi terlebih dahulu pada panel kanan, kemudian pilih Nomor Kursi yang Anda inginkan pada denah studio!</span>
@@ -560,41 +560,43 @@ export default function BookTickets() {
               ))}
             </div>
 
-            {/* Seat Grid */}
-            <div className="flex flex-col items-center justify-center gap-3 w-full">
-              {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
-                const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
-                return (
-                <div key={rIndex} className="flex flex-wrap justify-center gap-2">
-                  <div className="w-8 shrink-0 flex items-center justify-center text-gray-500 font-mono text-sm mr-2">{rowLetter}</div>
-                  {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
-                    const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
-                    const isBooked = unavailableSeats.has(seatId);
-                    const isSelected = selectedSeats.includes(seatId);
-                    
-                    return (
-                      <button
-                        key={seatId}
-                        type="button"
-                        onClick={() => handleSeatClick(seatId)}
-                        disabled={isBooked}
-                        title={seatId}
-                        className={cn(
-                          "w-6 h-6 md:w-8 md:h-8 rounded-t-lg rounded-b flex items-center justify-center text-[10px] sm:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
-                          isBooked 
-                           ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
-                           : isSelected 
-                            ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
-                            : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
-                        )}
-                      >
-                         {cIndex + 1}
-                      </button>
-                    )
-                  })}
-                </div>
-                );
-              })}
+            {/* Seat Grid Scroll Wrapper */}
+            <div className="w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              <div className="flex flex-col items-center justify-center gap-3 min-w-max px-4">
+                {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
+                  const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
+                  return (
+                  <div key={rIndex} className="flex flex-wrap justify-center gap-2">
+                    <div className="w-8 shrink-0 flex items-center justify-center text-gray-500 font-mono text-sm mr-2">{rowLetter}</div>
+                    {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
+                      const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
+                      const isBooked = unavailableSeats.has(seatId);
+                      const isSelected = selectedSeats.includes(seatId);
+                      
+                      return (
+                        <button
+                          key={seatId}
+                          type="button"
+                          onClick={() => handleSeatClick(seatId)}
+                          disabled={isBooked}
+                          title={seatId}
+                          className={cn(
+                            "w-6 h-6 md:w-8 md:h-8 rounded-t-lg rounded-b flex items-center justify-center text-[10px] sm:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
+                            isBooked 
+                             ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
+                             : isSelected 
+                              ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
+                              : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                          )}
+                        >
+                           {cIndex + 1}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Screen Divider */}
