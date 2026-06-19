@@ -86,7 +86,7 @@ export default function HomePage() {
           
           <div className="flex flex-col-reverse sm:flex-row gap-3 w-full sm:w-auto">
             <Link to="/book" className="w-full sm:w-auto">
-              <Button className="w-full sm:w-auto h-10 px-8 text-xs rounded-full bg-amber-500 text-black">
+              <Button className="w-full sm:w-auto h-10 px-8 text-xs rounded-full bg-amber-500 text-black animate-btn-flash">
                 Booking Tiket
               </Button>
             </Link>
