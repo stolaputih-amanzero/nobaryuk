@@ -292,14 +292,14 @@ export default function Dashboard() {
             </div>
 
             {/* Mobile Cards View (shown on mobile, hidden on desktop) */}
-            <div className="block md:hidden divide-y divide-white/5">
+            <div className="block md:hidden p-4 space-y-4">
               {filteredBookings.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 text-sm">
                   {bookings.length === 0 ? "Tidak ada data penjualan tiket." : "Tidak ada tiket yang cocok dengan pencarian Anda."}
                 </div>
               ) : (
                 filteredBookings.map((b) => (
-                  <div key={b.id} className="p-4 space-y-3">
+                  <div key={b.id} className="p-4 space-y-3 bg-white/5 border border-white/10 rounded-xl transition-colors hover:border-amber-500/30">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-bold text-gray-200 text-base">{b.buyerName}</div>
