@@ -560,16 +560,21 @@ export default function BookTickets() {
               ))}
             </div>
 
-            {/* Seat Grid Scroll Wrapper */}
-            <div className="w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              <div className="flex flex-col items-center justify-center gap-2 sm:gap-3 min-w-[720px] md:min-w-0 px-4">
+            {/* Seat Grid Wrapper */}
+            <div className="w-full pb-4">
+              <div className="flex flex-col gap-4 w-full items-stretch">
                 {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                   const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
                   return (
-                  <div key={rIndex} className="flex flex-nowrap items-center gap-1 sm:gap-2">
-                    <div className="w-6 sm:w-8 shrink-0 flex items-center justify-center text-gray-500 font-mono text-[10px] sm:text-sm mr-1 sm:mr-2">{rowLetter}</div>
+                  <div key={rIndex} className="bg-white/5 border border-white/10 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-0 sm:flex sm:flex-nowrap sm:items-center sm:gap-2">
+                    {/* Row Label */}
+                    <div className="flex items-center justify-between sm:justify-center w-full sm:w-8 shrink-0 pb-2 sm:pb-0 border-b border-white/5 sm:border-0 mb-2 sm:mb-0">
+                      <span className="text-amber-500/70 font-mono text-xs uppercase tracking-wider sm:hidden">Baris</span>
+                      <div className="w-6 h-6 rounded bg-amber-500/10 text-amber-500 font-mono text-xs sm:text-sm flex items-center justify-center font-bold">{rowLetter}</div>
+                    </div>
                     
-                    <div className="flex flex-nowrap gap-0.5 sm:gap-2">
+                    {/* Seat Buttons Wrap Container */}
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-start sm:flex-nowrap">
                       {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
                         const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
                         const isBooked = unavailableSeats.has(seatId);
@@ -583,7 +588,7 @@ export default function BookTickets() {
                             disabled={isBooked}
                             title={seatId}
                             className={cn(
-                              "w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-t-[2px] sm:rounded-t-lg rounded-b-[1px] flex items-center justify-center text-[9px] sm:text-[10px] md:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed shrink-0",
+                              "w-8 h-8 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-t-[4px] sm:rounded-t-lg rounded-b-[2px] flex items-center justify-center text-xs sm:text-[10px] md:text-xs font-mono transition-all duration-200 cursor-pointer disabled:cursor-not-allowed shrink-0",
                               isBooked 
                                ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
                                : isSelected 
