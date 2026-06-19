@@ -566,7 +566,7 @@ export default function BookTickets() {
                 {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                   const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
                   return (
-                  <div key={rIndex} className="flex flex-wrap justify-center gap-2">
+                  <div key={rIndex} className="flex flex-nowrap justify-center gap-2">
                     <div className="w-8 shrink-0 flex items-center justify-center text-gray-500 font-mono text-sm mr-2">{rowLetter}</div>
                     {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
                       const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
