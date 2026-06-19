@@ -1,20 +1,33 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PRICING, SeatType } from '../store/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { formatRupiah } from '@/utils';
+import { formatRupiah, cn } from '@/utils';
 import { format, differenceInDays } from 'date-fns';
-import { AlertTriangle, CheckCircle2, TrendingUp, Users, DollarSign, Ticket, Loader2, FileText } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, TrendingUp, Users, DollarSign, Ticket, Loader2, FileText, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient'; 
 import { Button } from '@/components/ui/Button';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
+ 
 export default function Dashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const showDate = new Date('2026-07-11T11:30:00+07:00');
+
+  const filteredBookings = useMemo(() => {
+    if (!searchQuery.trim()) return bookings;
+    const query = searchQuery.toLowerCase();
+    return bookings.filter(b => 
+      b.buyerName.toLowerCase().includes(query) || 
+      b.marketingName.toLowerCase().includes(query) ||
+      b.seatNumbers.some((s: string) => s.toLowerCase().includes(query)) ||
+      b.seatType.toLowerCase().includes(query) ||
+      b.id.toLowerCase().includes(query)
+    );
+  }, [bookings, searchQuery]);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -174,15 +187,27 @@ export default function Dashboard() {
                    <div className="text-gray-500 py-8 text-center">Belum ada data penjualan dari tim marketing.</div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(stats.marketingStats).sort((a,b) => (b[1] as number) - (a[1] as number)).map(([name, count], i) => (
-                        <div key={name} className="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/10">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-black border border-white/10 flex items-center justify-center font-bold text-amber-500 text-sm">#{i+1}</div>
-                            <span className="font-medium text-gray-200">{name}</span>
-                          </div>
-                          <span className="font-mono bg-black px-3 py-1 rounded text-sm text-amber-500">{count} Tiket</span>
-                        </div>
-                      ))}
+                      {Object.entries(stats.marketingStats).sort((a,b) => (b[1] as number) - (a[1] as number)).map(([name, count], i) => {
+                        const isSelected = searchQuery.toLowerCase() === name.toLowerCase();
+                        return (
+                          <button 
+                            key={name} 
+                            onClick={() => setSearchQuery(isSelected ? '' : name)}
+                            className={cn(
+                              "flex justify-between items-center p-4 rounded-xl border transition-all text-left w-full group",
+                              isSelected
+                                ? "bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+                                : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-black border border-white/10 flex items-center justify-center font-bold text-amber-500 text-sm">#{i+1}</div>
+                              <span className="font-medium text-gray-200 group-hover:text-amber-400 transition-colors">{name}</span>
+                            </div>
+                            <span className="font-mono bg-black px-3 py-1 rounded text-sm text-amber-500">{count} Tiket</span>
+                          </button>
+                        );
+                      })}
                     </div>
                 )}
               </CardContent>
@@ -191,8 +216,28 @@ export default function Dashboard() {
 
           {/* Main Table */}
           <Card className="border-white/10 overflow-hidden">
-            <CardHeader>
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle>Daftar Pesanan Tiket</CardTitle>
+              
+              {/* Search Bar */}
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Cari nama, marketing, kursi..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-black border border-white/10 rounded-lg pl-10 pr-8 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 animate-in fade-in"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </CardHeader>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -207,13 +252,13 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {bookings.length === 0 ? (
+                  {filteredBookings.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="p-4 py-12 text-center text-gray-500">
-                        Tidak ada data penjualan tiket.
+                        {bookings.length === 0 ? "Tidak ada data penjualan tiket." : "Tidak ada tiket yang cocok dengan pencarian Anda."}
                       </td>
                     </tr>
-                  ) : bookings.map((b) => (
+                  ) : filteredBookings.map((b) => (
                     <tr key={b.id} className="hover:bg-white/5 transition-colors">
                       <td className="p-4">
                         <div className="font-bold text-gray-200">{b.buyerName}</div>
