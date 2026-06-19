@@ -357,6 +357,28 @@ export default function BookTickets() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in slide-in-from-bottom">
       
+      {/* Petunjuk Pemilihan Kursi (Running Text / Info Bar) */}
+      <div className="overflow-hidden w-full max-w-full bg-amber-500/5 border border-amber-500/20 rounded-xl py-3 px-4 text-amber-500 text-xs font-bold uppercase tracking-wider font-display flex items-center gap-3">
+        <span className="shrink-0 bg-amber-500 text-black px-2 py-0.5 rounded text-[10px] font-extrabold animate-pulse">
+          PETUNJUK
+        </span>
+        <div className="overflow-hidden relative flex-1 min-w-0 max-w-full">
+          <div className="animate-marquee-container flex gap-8 whitespace-nowrap">
+            <div className="flex gap-8 shrink-0 whitespace-nowrap">
+              <span>👉 Silakan langsung pilih Nomor Kursi yang Anda inginkan pada denah studio di panel kanan!</span>
+              <span>•</span>
+              <span>Lengkapi data diri donatur/pembeli pada formulir sebelum melakukan konfirmasi pesanan!</span>
+              <span>•</span>
+            </div>
+            <div className="flex gap-8 shrink-0 whitespace-nowrap">
+              <span>👉 Silakan langsung pilih Nomor Kursi yang Anda inginkan pada denah studio di panel kanan!</span>
+              <span>•</span>
+              <span>Lengkapi data diri donatur/pembeli pada formulir sebelum melakukan konfirmasi pesanan!</span>
+              <span>•</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         
