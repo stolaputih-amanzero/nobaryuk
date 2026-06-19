@@ -590,10 +590,10 @@ const downloadAttendancePDF = () => {
           <Card className="border-white/10 bg-white/5 min-h-[600px] sticky top-24">
             <CardContent className="p-6">
               
-              <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                <h3 className="font-bold text-white">Live Seat Map (Status Pintu)</h3>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                <h3 className="font-bold text-white text-center sm:text-left">Live Seat Map (Status Pintu)</h3>
                 
-                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                <div className="flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-4 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 bg-white/5 border border-white/10 rounded-sm" /> Kosong
                   </div>
