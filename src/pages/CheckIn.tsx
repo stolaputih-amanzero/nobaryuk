@@ -654,20 +654,10 @@ const downloadAttendancePDF = () => {
                     <div className="w-3 h-3 bg-white/10 border border-white/40 rounded-sm shadow-[0_0_8px_rgba(255,255,255,0.05)]" /> Tengah Layar
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="flex gap-px border border-gray-500 rounded-sm overflow-hidden p-[1px] bg-white/5">
-                      <div className="w-1 h-2.5 bg-amber-500/40 rounded-sm" />
-                      <div className="w-1 h-2.5 bg-green-500/40 rounded-sm" />
-                      <div className="w-1 h-2.5 bg-red-500/40 rounded-sm" />
-                    </div>
-                    Belum Datang
+                    <div className="w-3 h-3 bg-gray-500/20 border border-gray-500/50 rounded-sm" /> Belum Datang
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="flex gap-px rounded-sm overflow-hidden p-[1px] border border-transparent">
-                      <div className="w-1 h-2.5 bg-amber-500 rounded-sm" />
-                      <div className="w-1 h-2.5 bg-green-500 rounded-sm" />
-                      <div className="w-1 h-2.5 bg-red-500 rounded-sm" />
-                    </div>
-                    Di Dalam
+                    <div className="w-3 h-3 bg-gray-400 border border-gray-300 rounded-sm shadow-[0_0_10px_rgba(156,163,175,0.3)]" /> Di Dalam
                   </div>
                 </div>
               </div>
