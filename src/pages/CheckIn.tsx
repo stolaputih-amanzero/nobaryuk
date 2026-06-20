@@ -620,14 +620,8 @@ const downloadAttendancePDF = () => {
                   };
                   const colorClass = getCategoryColor(type);
 
-                  const getCenterSeatClass = (t: string) => {
-                    if (t.includes('VIP')) return 'bg-amber-500/10 border-amber-500/30 text-amber-500/50';
-                    if (t.includes('Depan')) return 'bg-green-500/10 border-green-500/30 text-green-500/50';
-                    if (t.includes('Tengah')) return 'bg-red-500/10 border-red-500/30 text-red-500/50';
-                    if (t.includes('Belakang')) return 'bg-blue-500/10 border-blue-500/30 text-blue-500/50';
-                    return 'bg-white/10 border-white/30 text-gray-500';
-                  };
-                  const centerSeatClass = getCenterSeatClass(type);
+                  // Warna seragam untuk 4 kursi tengah di semua tipe (versi Check-In)
+                  const centerSeatClass = 'bg-white/10 border-white/40 text-gray-300 shadow-[0_0_8px_rgba(255,255,255,0.05)]';
 
                   return (
                     <div key={type} className="flex flex-col items-center">

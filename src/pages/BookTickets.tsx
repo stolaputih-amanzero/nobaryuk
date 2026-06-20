@@ -575,14 +575,8 @@ export default function BookTickets() {
                 };
                 const colorClass = getCategoryColor(type);
 
-                const getCenterSeatClass = (t: string) => {
-                  if (t.includes('VIP')) return 'bg-amber-500/20 border-amber-500/50 text-amber-200 hover:bg-amber-500/30';
-                  if (t.includes('Depan')) return 'bg-green-500/20 border-green-500/50 text-green-200 hover:bg-green-500/30';
-                  if (t.includes('Tengah')) return 'bg-red-500/20 border-red-500/50 text-red-200 hover:bg-red-500/30';
-                  if (t.includes('Belakang')) return 'bg-blue-500/20 border-blue-500/50 text-blue-200 hover:bg-blue-500/30';
-                  return 'bg-white/20 border-white/50 text-white hover:bg-white/30';
-                };
-                const centerSeatClass = getCenterSeatClass(type);
+                // Warna seragam untuk 4 kursi tengah di semua tipe
+                const centerSeatClass = 'bg-white/15 border-white/50 text-white hover:bg-white/30 shadow-[0_0_8px_rgba(255,255,255,0.15)]';
 
                 return (
                   <div key={type} className="flex flex-col items-center w-full">
@@ -617,7 +611,7 @@ export default function BookTickets() {
                                    : isSelected 
                                     ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110 z-10" 
                                     : isCenterSeat 
-                                      ? cn("border font-bold shadow-[0_0_8px_rgba(255,255,255,0.05)]", centerSeatClass)
+                                      ? cn("border font-bold", centerSeatClass)
                                       : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
                                 )}
                               >
