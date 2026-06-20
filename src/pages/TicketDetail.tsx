@@ -145,37 +145,22 @@ export default function TicketDetail() {
     const nodeTicket = ticketRef.current;
     const nodeApresiasi = appreciationRef.current;
 
-    // Buat clone off-screen dari nodeTicket untuk mencegah pelebaran layar di mobile
-    const cloneTicket = nodeTicket.cloneNode(true) as HTMLDivElement;
-    cloneTicket.style.setProperty('width', '600px', 'important');
-    cloneTicket.style.setProperty('height', 'auto', 'important');
-    cloneTicket.style.setProperty('position', 'fixed', 'important');
-    cloneTicket.style.setProperty('left', '-9999px', 'important');
-    cloneTicket.style.setProperty('top', '0', 'important');
-    cloneTicket.style.setProperty('visibility', 'visible', 'important');
-    document.body.appendChild(cloneTicket);
-
     try {
       // Tunggu render QR & Font
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const actualWidth = 600;
-      const ticketHeight = cloneTicket.offsetHeight; 
+      const ticketHeight = nodeTicket.offsetHeight; 
       const apresiasiHeight = 846; // Ukuran A4 Proporsional
 
-      // 1. Snapshot Halaman 1 (Tiket Utama) menggunakan clone
-      const imgTicket = await toPng(cloneTicket, { 
+      // 1. Snapshot Halaman 1 (Tiket Utama)
+      const imgTicket = await toPng(nodeTicket, { 
         backgroundColor: '#0A0A0A',
         pixelRatio: 2, 
         width: actualWidth,
         height: ticketHeight,
         style: { width: `${actualWidth}px`, height: `${ticketHeight}px`, margin: '0', transform: 'none' }
       });
-
-      // Bersihkan clone dari DOM setelah snapshot selesai
-      if (document.body.contains(cloneTicket)) {
-        document.body.removeChild(cloneTicket);
-      }
 
       // 2. Snapshot Halaman 2 (Apresiasi VIP Tersembunyi)
       const imgApresiasi = await toPng(nodeApresiasi, { 
@@ -199,10 +184,6 @@ export default function TicketDetail() {
       pdf.save(`Tiket_Nobar_${ticket.buyerName.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      // Bersihkan clone jika terjadi error
-      if (document.body.contains(cloneTicket)) {
-        document.body.removeChild(cloneTicket);
-      }
       alert('Gagal membuat PDF. Silahkan coba lagi.');
     } finally {
       setIsDownloading(false);
@@ -278,6 +259,110 @@ Salam hormat,
     executeWithAuth(() => setIsDeleteDialogOpen(true));
   };
 
+  const renderTicketContent = () => (
+    <>
+      {/* Background Overlay */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img 
+          src={backgroundImage} 
+          alt="Background" 
+          className="w-full h-full object-cover opacity-50 grayscale"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/95" />
+      </div>
+        
+       {/* Top Section - Event Details */}
+       <div className="pt-8 relative z-10">
+         <div className="text-center mb-8 pb-8 border-b border-white/10 border-dashed">
+           <div className="inline-flex items-center justify-center p-3 rounded-full bg-amber-500/10 text-amber-500 mb-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+             <Film className="w-8 h-8" />
+           </div>
+           <h1 className="text-4xl font-display font-bold uppercase tracking-widest text-white mb-2">Cine<span className="text-amber-500">matix</span></h1>
+           <p className="text-gray-400 tracking-widest font-mono text-sm uppercase">Nonton Bareng GPI 2026</p>
+         </div>
+
+         <div className="mb-8">
+           <h2 className="text-2xl font-bold font-display text-white mb-1">Children of Heaven (2026)</h2>
+           <p className="text-amber-500 font-medium pb-2 border-b border-white/10">Subtitle: {ticket.subtitleLanguage}</p>
+         </div>
+
+         <div className="grid grid-cols-2 gap-y-6">
+            <div>
+              <div className="text-xs text-gray-400 uppercase font-bold mb-1">Pembeli / Name</div>
+              <div className="font-semibold text-lg text-white">{ticket.buyerName}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase font-bold mb-1">Tanggal / Date</div>
+              <div className="font-semibold text-lg text-white">11 Juli 2026</div>
+            </div>
+            <div>
+               <div className="text-xs text-gray-400 uppercase font-bold mb-1">Waktu / Time</div>
+               <div className="font-semibold text-lg text-white flex items-center gap-1">
+                 <Clock className="w-4 h-4 text-amber-500" /> 12:00 WIB
+               </div>
+            </div>
+            <div>
+               <div className="text-xs text-gray-400 uppercase font-bold mb-1">Seats ({ticket.seatType})</div>
+               <div className="font-semibold text-lg text-amber-500 font-mono tracking-wider leading-relaxed">
+                 {ticket.seatNumbers.join(', ')}
+               </div>
+            </div>
+            <div className="col-span-2">
+               <div className="text-xs text-gray-400 uppercase font-bold mb-1">Lokasi Studio</div>
+               <div className="font-semibold text-white flex items-center gap-2">
+                 <MapPin className="w-4 h-4 text-amber-500" /> 
+                 Cinema 1, Lt. 1 - Cinepolis Senayan Park Jakarta
+               </div>
+            </div>
+            {/* --- TAMBAHAN BARU: JUMLAH TIKET --- */}
+            <div className="col-span-2 pt-5 mt-2 border-t border-white/10 flex items-center justify-between">
+               <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Total Tiket</div>
+               <div className="font-bold text-3xl text-amber-500">
+                 {ticket.seatNumbers.length} <span className="text-sm font-normal text-white tracking-widest ml-1">TIKET</span>
+               </div>
+            </div>
+            {/* ---------------------------------- */}
+         </div>
+       </div>
+
+       <div className="pt-8 mt-8 border-t border-white/10 border-dashed relative z-10 flex flex-col items-center">
+         <div className="flex flex-col items-center mb-6 text-center w-full">
+            <span className={cn(
+              "px-4 py-1.5 rounded-full text-xs font-bold uppercase mb-3 border",
+              ticket.verified 
+                ? "bg-green-500/10 text-green-400 border-green-500/30" 
+                : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+            )}>
+              {ticket.verified ? "Lunas & Terverifikasi" : "Belum Lunas"}
+            </span>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
+              <span>Marketing: <span className="text-gray-200 font-medium">{ticket.marketingName}</span></span>
+              {ticket.purchaseDate && <span>Tgl Beli: <span className="text-gray-200">{ticket.purchaseDate}</span></span>}
+            </div>
+         </div>
+
+         <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
+           <QRCodeSVG 
+             value={`${window.location.origin}/checkin/${ticket.id}`}
+             size={240}
+             level="H"
+             includeMargin={true}
+             bgColor={"#FFFFFF"}
+             fgColor={"#000000"}
+           />
+         </div>
+
+         <div className="text-center space-y-1">
+           <div className="text-[10px] text-gray-400 uppercase tracking-widest">Scan untuk Check-in</div>
+           <div className="font-mono text-sm text-amber-500 font-bold tracking-widest">{ticket.id.toUpperCase()}</div>
+         </div>
+       </div>
+       
+       <div className="absolute top-[60%] -left-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-r border-white/10 transform -translate-y-1/2 z-10" />
+       <div className="absolute top-[60%] -right-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-l border-white/10 transform -translate-y-1/2 z-10" />
+    </>
+  );
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 pb-12 relative overflow-x-hidden">
       
@@ -312,112 +397,13 @@ Salam hormat,
         </div>
       </div>
 
-      {/* TICKET CARD START (HALAMAN 1 PDF) */}
+      {/* TICKET CARD START (VISIBLE) */}
       <div className="max-w-xl mx-auto drop-shadow-2xl overflow-hidden rounded-2xl relative border border-white/10">
         <div 
-          ref={ticketRef} 
           className="relative text-gray-100 p-8 pt-0 w-[600px] h-max min-h-[900px] flex flex-col justify-between bg-black" 
           style={{ fontFamily: 'var(--font-sans)', width: '100%', height: '100%' }}
         >
-          {/* Background Overlay */}
-          <div className="absolute inset-0 z-0 pointer-events-none">
-            <img 
-              src={backgroundImage} 
-              alt="Background" 
-              className="w-full h-full object-cover opacity-50 grayscale"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/95" />
-          </div>
-            
-           {/* Top Section - Event Details */}
-           <div className="pt-8 relative z-10">
-             <div className="text-center mb-8 pb-8 border-b border-white/10 border-dashed">
-               <div className="inline-flex items-center justify-center p-3 rounded-full bg-amber-500/10 text-amber-500 mb-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                 <Film className="w-8 h-8" />
-               </div>
-               <h1 className="text-4xl font-display font-bold uppercase tracking-widest text-white mb-2">Cine<span className="text-amber-500">matix</span></h1>
-               <p className="text-gray-400 tracking-widest font-mono text-sm uppercase">Nonton Bareng GPI 2026</p>
-             </div>
-
-             <div className="mb-8">
-               <h2 className="text-2xl font-bold font-display text-white mb-1">Children of Heaven (2026)</h2>
-               <p className="text-amber-500 font-medium pb-2 border-b border-white/10">Subtitle: {ticket.subtitleLanguage}</p>
-             </div>
-
-             <div className="grid grid-cols-2 gap-y-6">
-                <div>
-                  <div className="text-xs text-gray-400 uppercase font-bold mb-1">Pembeli / Name</div>
-                  <div className="font-semibold text-lg text-white">{ticket.buyerName}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 uppercase font-bold mb-1">Tanggal / Date</div>
-                  <div className="font-semibold text-lg text-white">11 Juli 2026</div>
-                </div>
-                <div>
-                   <div className="text-xs text-gray-400 uppercase font-bold mb-1">Waktu / Time</div>
-                   <div className="font-semibold text-lg text-white flex items-center gap-1">
-                     <Clock className="w-4 h-4 text-amber-500" /> 12:00 WIB
-                   </div>
-                </div>
-                <div>
-                   <div className="text-xs text-gray-400 uppercase font-bold mb-1">Seats ({ticket.seatType})</div>
-                   <div className="font-semibold text-lg text-amber-500 font-mono tracking-wider leading-relaxed">
-                     {ticket.seatNumbers.join(', ')}
-                   </div>
-                </div>
-                <div className="col-span-2">
-                   <div className="text-xs text-gray-400 uppercase font-bold mb-1">Lokasi Studio</div>
-                   <div className="font-semibold text-white flex items-center gap-2">
-                     <MapPin className="w-4 h-4 text-amber-500" /> 
-                     Cinema 1, Lt. 1 - Cinepolis Senayan Park Jakarta
-                   </div>
-                </div>
-                {/* --- TAMBAHAN BARU: JUMLAH TIKET --- */}
-                <div className="col-span-2 pt-5 mt-2 border-t border-white/10 flex items-center justify-between">
-                   <div className="text-xs text-gray-400 uppercase font-bold tracking-widest">Total Tiket</div>
-                   <div className="font-bold text-3xl text-amber-500">
-                     {ticket.seatNumbers.length} <span className="text-sm font-normal text-white tracking-widest ml-1">TIKET</span>
-                   </div>
-                </div>
-                {/* ---------------------------------- */}
-             </div>
-           </div>
-
-           <div className="pt-8 mt-8 border-t border-white/10 border-dashed relative z-10 flex flex-col items-center">
-             <div className="flex flex-col items-center mb-6 text-center w-full">
-                <span className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-bold uppercase mb-3 border",
-                  ticket.verified 
-                    ? "bg-green-500/10 text-green-400 border-green-500/30" 
-                    : "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                )}>
-                  {ticket.verified ? "Lunas & Terverifikasi" : "Belum Lunas"}
-                </span>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] text-gray-400">
-                  <span>Marketing: <span className="text-gray-200 font-medium">{ticket.marketingName}</span></span>
-                  {ticket.purchaseDate && <span>Tgl Beli: <span className="text-gray-200">{ticket.purchaseDate}</span></span>}
-                </div>
-             </div>
-
-             <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] mb-4">
-               <QRCodeSVG 
-                 value={`${window.location.origin}/checkin/${ticket.id}`}
-                 size={240}
-                 level="H"
-                 includeMargin={true}
-                 bgColor={"#FFFFFF"}
-                 fgColor={"#000000"}
-               />
-             </div>
-
-             <div className="text-center space-y-1">
-               <div className="text-[10px] text-gray-400 uppercase tracking-widest">Scan untuk Check-in</div>
-               <div className="font-mono text-sm text-amber-500 font-bold tracking-widest">{ticket.id.toUpperCase()}</div>
-             </div>
-           </div>
-           
-           <div className="absolute top-[60%] -left-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-r border-white/10 transform -translate-y-1/2 z-10" />
-           <div className="absolute top-[60%] -right-4 w-8 h-8 rounded-full bg-[#0A0A0A] border-l border-white/10 transform -translate-y-1/2 z-10" />
+          {renderTicketContent()}
         </div>
       </div>
       {/* TICKET CARD END */}
@@ -520,10 +506,21 @@ Salam hormat,
 
 
       {/* ==================================================================
-        HALAMAN 2 PDF (APRESIASI VIP) - DISEMBUNYIKAN DARI LAYAR WEBSITE 
+        HALAMAN 1 & 2 PDF - DISEMBUNYIKAN DARI LAYAR WEBSITE 
         ==================================================================
       */}
-      <div className="fixed left-[-9999px] top-0 pointer-events-none">
+      <div className="fixed left-[-9999px] top-0 pointer-events-none flex flex-col gap-10">
+        
+        {/* TIKET PDF HIDDEN */}
+        <div 
+          ref={ticketRef}
+          className="relative text-gray-100 p-8 pt-0 w-[600px] h-max min-h-[900px] flex flex-col justify-between bg-black" 
+          style={{ fontFamily: 'var(--font-sans)' }}
+        >
+          {renderTicketContent()}
+        </div>
+
+        {/* APRESIASI PDF HIDDEN */}
         <div 
           ref={appreciationRef}
           className="relative w-[600px] h-[846px] bg-[#0A0A0A] p-10 flex flex-col items-center justify-center overflow-hidden"
