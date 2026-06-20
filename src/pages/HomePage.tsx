@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Clock, ExternalLink, Bell, Film } from 'lucide-react';
+import { Calendar, MapPin, Clock, ExternalLink, Bell, Film, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Link } from 'react-router-dom';
@@ -172,6 +172,25 @@ export default function HomePage() {
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      {/* Informasi Rekening */}
+      <section className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="relative z-10">
+          <h2 className="text-2xl font-display font-semibold text-white mb-2 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+               <CreditCard className="w-5 h-5" />
+            </span>
+            Informasi Rekening
+          </h2>
+          <p className="text-gray-400 text-sm max-w-sm mt-2">Pembayaran atau donasi tiket nonton bareng dapat dikirimkan melalui rekening resmi berikut.</p>
+        </div>
+        <div className="bg-black/40 p-6 md:px-8 rounded-xl border border-white/10 flex-1 md:max-w-md w-full relative z-10 backdrop-blur-md shadow-2xl">
+           <div className="text-xs text-amber-500 uppercase font-bold tracking-widest mb-1">Bank BRI</div>
+           <div className="text-2xl md:text-3xl font-mono text-white font-bold tracking-[0.1em] md:tracking-[0.15em] mb-2">0329 0100 2828 309</div>
+           <div className="text-sm font-semibold text-gray-300 tracking-wider">A.N. BPH SINODE AM GEREJA</div>
+        </div>
       </section>
 
       {/* Preparation Guidelines */}
