@@ -641,7 +641,7 @@ export default function BookTickets() {
                   <div className="w-4 h-4 bg-white/10 border border-white/20 rounded-t-sm" /> Tersedia
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-white/15 border border-white/50 rounded-t-sm shadow-[0_0_8px_rgba(255,255,255,0.15)]" /> Tengah
+                  <div className="w-4 h-4 bg-white/15 border border-white/50 rounded-t-sm shadow-[0_0_8px_rgba(255,255,255,0.15)]" /> Tengah Layar
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-amber-500 rounded-t-sm" /> Dipilih

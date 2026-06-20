@@ -598,7 +598,7 @@ const downloadAttendancePDF = () => {
                     <div className="w-3 h-3 bg-white/5 border border-white/10 rounded-sm" /> Kosong
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-white/10 border border-white/40 rounded-sm shadow-[0_0_8px_rgba(255,255,255,0.05)]" /> Tengah
+                    <div className="w-3 h-3 bg-white/10 border border-white/40 rounded-sm shadow-[0_0_8px_rgba(255,255,255,0.05)]" /> Tengah Layar
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 bg-white/20 border border-gray-500 rounded-sm" /> Belum Datang
