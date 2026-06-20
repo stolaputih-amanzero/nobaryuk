@@ -25,9 +25,9 @@ const sortSeats = (seats: string[]) => {
       const numB = parseInt(matchB[2], 10);
 
       if (rowA === rowB) {
-        return numA - numB;
+        return numA - numB; 
       }
-      return rowA.localeCompare(rowB);
+      return rowA.localeCompare(rowB); 
     }
     return a.localeCompare(b);
   });
@@ -42,8 +42,8 @@ export default function BookTickets() {
   const [dbBookings, setDbBookings] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [isLoadingEdit, setIsLoadingEdit] = useState(!!editId);
-
+  const [isLoadingEdit, setIsLoadingEdit] = useState(!!editId); 
+  
   const [existingProofUrl, setExistingProofUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -130,7 +130,7 @@ export default function BookTickets() {
 
     fetchEditData();
   }, [editId]);
-
+  
   const unavailableSeats = useMemo(() => {
     const set = new Set<string>();
     dbBookings.forEach(b => {
@@ -144,7 +144,7 @@ export default function BookTickets() {
 
   const handleSeatClick = (seatId: string) => {
     if (unavailableSeats.has(seatId)) return;
-    setSelectedSeats(prev =>
+    setSelectedSeats(prev => 
       prev.includes(seatId) ? prev.filter(s => s !== seatId) : [...prev, seatId]
     );
   };
@@ -167,30 +167,30 @@ export default function BookTickets() {
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setIsCompressing(true);
-
+      setIsCompressing(true); 
+      
       try {
         const options = {
-          maxSizeMB: 1.8,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
+          maxSizeMB: 1.8,          
+          maxWidthOrHeight: 1920,  
+          useWebWorker: true,      
         };
 
         const compressedBlob = await imageCompression(file, options);
-
+        
         const compressedFile = new File([compressedBlob], file.name, {
           type: compressedBlob.type,
           lastModified: Date.now(),
         });
 
         setProofFile(compressedFile);
-
+        
       } catch (error) {
         console.error("Gagal mengompres gambar:", error);
         alert("Terjadi kesalahan saat memproses gambar. Silahkan coba gambar lain.");
         e.target.value = '';
       } finally {
-        setIsCompressing(false);
+        setIsCompressing(false); 
       }
     } else {
       setProofFile(file);
@@ -216,7 +216,7 @@ export default function BookTickets() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedSeats.length === 0) return alert("Pilih minimal 1 kursi!");
-
+    
     if (editId) {
       const isAdmin = localStorage.getItem('isAdminAuthenticated') === 'true';
       if (!isAdmin) {
@@ -226,7 +226,7 @@ export default function BookTickets() {
       }
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true); 
 
     try {
       // =====================================================================
@@ -240,7 +240,7 @@ export default function BookTickets() {
 
       const currentlyBookedSeats = new Set<string>();
       latestTickets.forEach(t => {
-        if (editId && t.id === editId) return;
+        if (editId && t.id === editId) return; 
         t.seat_numbers?.forEach((s: string) => currentlyBookedSeats.add(s));
       });
 
@@ -248,15 +248,15 @@ export default function BookTickets() {
 
       if (conflictSeats.length > 0) {
         alert(`🚨 KEDULUAN ORANG LAIN!\n\nMaaf, kursi ${conflictSeats.join(', ')} baru saja dipesan oleh orang lain beberapa detik yang lalu.\n\nSistem akan memperbarui peta kursi. Silakan pilih kursi yang lain.`);
-
+        
         setIsSubmitting(false);
-        setSelectedSeats([]);
-        await fetchReservedSeats();
-        return;
+        setSelectedSeats([]); 
+        await fetchReservedSeats(); 
+        return; 
       }
       // =====================================================================
 
-      let finalPaymentProofUrl = existingProofUrl;
+      let finalPaymentProofUrl = existingProofUrl; 
 
       if (proofFile) {
         const fileExt = proofFile.name.split('.').pop();
@@ -279,7 +279,7 @@ export default function BookTickets() {
 
         finalPaymentProofUrl = publicUrlData.publicUrl;
       }
-
+      
       const sortedSeats = sortSeats(selectedSeats);
 
       const selectedTypes = Array.from(new Set(selectedSeats.map(seatId => {
@@ -301,7 +301,7 @@ export default function BookTickets() {
         is_checked_in: false,
         purchase_date: form.purchaseDate,
         settlement_date: form.settlementDate === '' ? null : form.settlementDate,
-        payment_proof_url: finalPaymentProofUrl,
+        payment_proof_url: finalPaymentProofUrl, 
       };
 
       if (editId) {
@@ -342,282 +342,306 @@ export default function BookTickets() {
 
   const resetSeatType = (type: SeatType) => {
     setForm(prev => ({ ...prev, seatType: type }));
-    setSelectedSeats([]);
+    setSelectedSeats([]); 
   };
 
   if (isLoadingEdit) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-amber-500 gap-4">
-        <Loader2 className="w-10 h-10 animate-spin" />
-        <p className="text-gray-400 font-medium tracking-wider animate-pulse">Memuat data tiket...</p>
+         <Loader2 className="w-10 h-10 animate-spin" />
+         <p className="text-gray-400 font-medium tracking-wider animate-pulse">Memuat data tiket...</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in slide-in-from-bottom">
-
+      
+      {/* Petunjuk Pemilihan Kursi (Running Text / Info Bar) */}
+      <div className="relative w-full bg-amber-500/5 border border-amber-500/20 rounded-xl py-3 px-4 text-amber-500 text-xs font-bold uppercase tracking-wider font-display flex items-center gap-3 overflow-hidden">
+        <span className="shrink-0 bg-amber-500 text-black px-2 py-0.5 rounded text-[10px] font-extrabold animate-pulse z-10">
+          PETUNJUK
+        </span>
+        <div className="relative flex-1 h-4 overflow-hidden">
+          <div className="absolute inset-0 flex items-center">
+            <div className="animate-marquee-container flex gap-8 whitespace-nowrap">
+              <div className="flex gap-8 shrink-0 whitespace-nowrap">
+                <span>👉 Silakan langsung pilih Nomor Kursi yang Anda inginkan pada denah studio di panel kanan!</span>
+                <span>•</span>
+                <span>Lengkapi data diri donatur/pembeli pada formulir sebelum melakukan konfirmasi pesanan!</span>
+                <span>•</span>
+              </div>
+              <div className="flex gap-8 shrink-0 whitespace-nowrap">
+                <span>👉 Silakan langsung pilih Nomor Kursi yang Anda inginkan pada denah studio di panel kanan!</span>
+                <span>•</span>
+                <span>Lengkapi data diri donatur/pembeli pada formulir sebelum melakukan konfirmasi pesanan!</span>
+                <span>•</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-
+        
         {/* Form Sidebar */}
         <div className="w-full lg:w-1/3 shrink-0 order-2 lg:order-1 space-y-6 min-w-0">
-          <div>
-            <h1 className="text-3xl font-display font-bold mb-2">{editId ? "Edit Tiket" : "Form Data Tiket"}</h1>
-            <p className="text-gray-400">{editId ? "Update detail dan pemilihan kursi untuk tiket ini." : "Masukan data diri donatur atau pembeli tiket dengan lengkap."}</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-display font-bold mb-2">{editId ? "Edit Tiket" : "Form Data Tiket"}</h1>
+          <p className="text-gray-400">{editId ? "Update detail dan pemilihan kursi untuk tiket ini." : "Masukan data diri donatur atau pembeli tiket dengan lengkap."}</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Card className="bg-white/5 border-white/10">
-              <CardContent className="p-4 sm:p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-4 sm:p-6 space-y-5">
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Nama Pembeli/Donatur</label>
+                <input 
+                  required 
+                  value={form.buyerName} 
+                  onChange={e => setForm({...form, buyerName: e.target.value})}
+                  className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                  placeholder="Mis. Bapak Budi / PT Angkasa" 
+                />
+              </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Nama Marketing (Tim)</label>
+                <input 
+                  required
+                  value={form.marketingName} 
+                  onChange={e => setForm({...form, marketingName: e.target.value})}
+                  className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                  placeholder="Mis. Andi - Tim A" 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Nama Pembeli/Donatur</label>
-                  <input
-                    required
-                    value={form.buyerName}
-                    onChange={e => setForm({ ...form, buyerName: e.target.value })}
-                    className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    placeholder="Mis. Bapak Budi / PT Angkasa"
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Tanggal Pembelian</label>
+                  <input 
+                    type="date"
+                    required 
+                    value={form.purchaseDate} 
+                    onChange={e => setForm({...form, purchaseDate: e.target.value})}
+                    className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Nama Marketing (Tim)</label>
-                  <input
-                    required
-                    value={form.marketingName}
-                    onChange={e => setForm({ ...form, marketingName: e.target.value })}
-                    className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    placeholder="Mis. Andi - Tim A"
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Tanggal Pelunasan</label>
+                  <input 
+                    type="date"
+                    value={form.settlementDate} 
+                    onChange={e => setForm({...form, settlementDate: e.target.value})}
+                    className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Tanggal Pembelian</label>
-                    <input
-                      type="date"
-                      required
-                      value={form.purchaseDate}
-                      onChange={e => setForm({ ...form, purchaseDate: e.target.value })}
-                      className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Tanggal Pelunasan</label>
-                    <input
-                      type="date"
-                      value={form.settlementDate}
-                      onChange={e => setForm({ ...form, settlementDate: e.target.value })}
-                      className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Metode Bayar</label>
-                    <select
-                      value={form.paymentMethod}
-                      onChange={e => setForm({ ...form, paymentMethod: e.target.value as any })}
-                      className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                      <option value="Transfer Bank">Transfer Bank</option>
-                      <option value="Cash">Cash</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Tenor / Cicilan</label>
-                    <select
-                      value={form.paymentTenor}
-                      onChange={e => setForm({ ...form, paymentTenor: e.target.value as any })}
-                      className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                      <option value="Lunas">Lunas (Cash)</option>
-                      <option value="DP (Maks 2x)">DP / Cicil (Maks 2x)</option>
-                    </select>
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Pilihan Subtitle</label>
-                  <select
-                    value={form.subtitleLanguage}
-                    onChange={e => setForm({ ...form, subtitleLanguage: e.target.value })}
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Metode Bayar</label>
+                  <select 
+                    value={form.paymentMethod}
+                    onChange={e => setForm({...form, paymentMethod: e.target.value as any})}
                     className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <option value="Indonesia">Indonesia</option>
-                    <option value="English">English</option>
+                    <option value="Transfer Bank">Transfer Bank</option>
+                    <option value="Cash">Cash</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center justify-between">
-                    <span>Bukti Pembayaran (Transfer/Cash)</span>
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Maks. 2MB</span>
-                  </label>
-                  <div className="relative border-2 border-dashed border-white/10 rounded-lg p-6 hover:border-amber-500/50 transition-colors bg-black/50 group">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div className="flex flex-col items-center justify-center text-center gap-2">
-                      {isCompressing ? (
-                        <>
-                          <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-2" />
-                          <p className="text-sm text-amber-500 font-medium animate-pulse">Mengompres gambar...</p>
-                          <p className="text-[10px] text-gray-500">Mohon tunggu sebentar</p>
-                        </>
-                      ) : proofFile ? (
-                        <>
-                          <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/30">
-                            <Check className="w-5 h-5 text-green-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-green-500 font-medium truncate max-w-[200px]">{proofFile.name}</p>
-                            <p className="text-[10px] text-gray-500 mt-1">{(proofFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                          </div>
-                        </>
-                      ) : existingProofUrl ? (
-                        <>
-                          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
-                            <Check className="w-5 h-5 text-blue-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-blue-400 font-medium">File sudah terunggah</p>
-                            <p className="text-[10px] text-gray-500 mt-1">Timpa dengan file baru jika perlu</p>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-amber-500/10 group-hover:text-amber-500 transition-colors">
-                            <span className="text-gray-400 group-hover:text-amber-500 text-xl">+</span>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-300">Klik atau Drag & Drop foto bukti</p>
-                            <p className="text-[10px] text-gray-500 mt-1">JPG, PNG, PDF</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Tenor / Cicilan</label>
+                  <select 
+                    value={form.paymentTenor}
+                    onChange={e => setForm({...form, paymentTenor: e.target.value as any})}
+                    className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <option value="Lunas">Lunas (Cash)</option>
+                    <option value="DP (Maks 2x)">DP / Cicil (Maks 2x)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Pilihan Subtitle</label>
+                <select 
+                  value={form.subtitleLanguage}
+                  onChange={e => setForm({...form, subtitleLanguage: e.target.value})}
+                  className="w-full bg-black border border-white/10 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                  <option value="Indonesia">Indonesia</option>
+                  <option value="English">English</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center justify-between">
+                  <span>Bukti Pembayaran (Transfer/Cash)</span>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Maks. 2MB</span>
+                </label>
+                <div className="relative border-2 border-dashed border-white/10 rounded-lg p-6 hover:border-amber-500/50 transition-colors bg-black/50 group">
+                  <input 
+                    type="file" 
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="flex flex-col items-center justify-center text-center gap-2">
+                    {isCompressing ? (
+                      <>
+                        <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-2" />
+                        <p className="text-sm text-amber-500 font-medium animate-pulse">Mengompres gambar...</p>
+                        <p className="text-[10px] text-gray-500">Mohon tunggu sebentar</p>
+                      </>
+                    ) : proofFile ? (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/30">
+                          <Check className="w-5 h-5 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-green-500 font-medium truncate max-w-[200px]">{proofFile.name}</p>
+                          <p className="text-[10px] text-gray-500 mt-1">{(proofFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                      </>
+                    ) : existingProofUrl ? (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
+                          <Check className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-400 font-medium">File sudah terunggah</p>
+                          <p className="text-[10px] text-gray-500 mt-1">Timpa dengan file baru jika perlu</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-amber-500/10 group-hover:text-amber-500 transition-colors">
+                          <span className="text-gray-400 group-hover:text-amber-500 text-xl">+</span>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-300">Klik atau Drag & Drop foto bukti</p>
+                          <p className="text-[10px] text-gray-500 mt-1">JPG, PNG, PDF</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-2 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, verified: !form.verified })}
-                    className="flex items-center gap-3 cursor-pointer text-left w-full focus:outline-none group"
-                  >
+              <div className="pt-2 border-t border-white/10">
+                 <button 
+                  type="button"
+                  onClick={() => setForm({...form, verified: !form.verified})}
+                  className="flex items-center gap-3 cursor-pointer text-left w-full focus:outline-none group"
+                 >
                     <div className={cn("w-6 h-6 rounded flex items-center justify-center border transition-colors group-hover:border-amber-500/50", form.verified ? "bg-green-500 border-green-500 group-hover:border-green-400" : "bg-white/5 border-white/20")}>
                       {form.verified && <Check className="w-4 h-4 text-white stroke-[3]" />}
                     </div>
                     <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Tandai Langsung Verified (Pembayaran Lunas & Sah)</span>
-                  </button>
-                </div>
-
-              </CardContent>
-            </Card>
-
-            <Button type="submit" disabled={isSubmitting || isCompressing} className="w-full h-14 text-lg font-bold">
-              {isSubmitting ? (
-                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Mengunggah...</>
-              ) : isCompressing ? (
-                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memproses Foto...</>
-              ) : (
-                <>{editId ? "Simpan Perubahan" : "Konfirmasi Pesanan"} - {formatRupiah(totalPrice)}</>
-              )}
-            </Button>
-          </form>
-        </div>
-
-        {/* Seat Selection Panel */}
-        <div className="w-full lg:w-2/3 order-1 lg:order-2 min-w-0">
-          <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5">
-            <CardContent className="p-4 sm:p-6">
-
-              {/* Seat Grid - Render All Types */}
-              <div className="flex flex-col gap-8 w-full items-center">
-                {(Object.keys(PRICING) as SeatType[]).map(type => {
-                  const currentTypeInfo = PRICING[type];
-                  return (
-                    <div key={type} className="flex flex-col items-center w-full">
-                      <div className="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 text-center">{type}</div>
-                      <div className="flex flex-col gap-2 w-full items-center">
-                        {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
-                          const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
-                          return (
-                            <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
-                              <div className="w-6 shrink-0 flex items-center justify-center text-gray-600 font-mono text-[10px] mr-1">{rowLetter}</div>
-                              {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
-                                const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
-                                const isBooked = unavailableSeats.has(seatId);
-                                const isSelected = selectedSeats.includes(seatId);
-
-                                return (
-                                  <button
-                                    key={seatId}
-                                    type="button"
-                                    onClick={() => handleSeatClick(seatId)}
-                                    disabled={isBooked}
-                                    title={seatId}
-                                    className={cn(
-                                      "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed",
-                                      isBooked
-                                        ? "bg-white/5 text-gray-600 opacity-50 border border-white/10"
-                                        : isSelected
-                                          ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110"
-                                          : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
-                                    )}
-                                  >
-                                    {cIndex + 1}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Screen Divider */}
-              <div className="w-full border-t-[8px] border-amber-500/20 mt-12 relative flex justify-center">
-                <span className="absolute -top-3 bg-[#111111] px-4 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
-                <div className="absolute bottom-0 w-3/4 h-32 bg-gradient-to-t from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
-              </div>
-
-              {/* Legend & Summary */}
-              <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap gap-6 justify-between items-end">
-                <div className="flex gap-4 text-xs font-medium text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-white/10 border border-white/20 rounded-t-sm" /> Tersedia
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-amber-500 rounded-t-sm" /> Dipilih
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-white/5 border border-white/10 opacity-50 rounded-t-sm" /> Tidak Tersedia
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-sm text-gray-400 mb-1">Tiket Terpilih</div>
-                  <div className="text-xl font-bold font-display text-white">
-                    {selectedSeats.length} <span className="text-amber-500 text-base font-normal">Seat</span>
-                  </div>
-                </div>
+                 </button>
               </div>
 
             </CardContent>
           </Card>
-        </div>
 
+          <Button type="submit" disabled={isSubmitting || isCompressing} className="w-full h-14 text-lg font-bold">
+            {isSubmitting ? (
+              <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sedang Mengunggah...</>
+            ) : isCompressing ? (
+              <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Memproses Foto...</>
+            ) : (
+              <>{editId ? "Simpan Perubahan" : "Konfirmasi Pesanan"} - {formatRupiah(totalPrice)}</>
+            )}
+          </Button>
+        </form>
       </div>
+
+      {/* Seat Selection Panel */}
+      <div className="w-full lg:w-2/3 order-1 lg:order-2 min-w-0">
+        <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5">
+          <CardContent className="p-4 sm:p-6">
+            
+            {/* Seat Grid - Render All Types */}
+            <div className="flex flex-col gap-8 w-full items-center">
+              {(Object.keys(PRICING) as SeatType[]).map(type => {
+                const currentTypeInfo = PRICING[type];
+                return (
+                  <div key={type} className="flex flex-col items-center w-full">
+                    <div className="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 text-center">{type}</div>
+                    <div className="flex flex-col gap-2 w-full items-center">
+                      {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
+                        const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
+                        return (
+                        <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
+                          <div className="w-6 shrink-0 flex items-center justify-center text-gray-600 font-mono text-[10px] mr-1">{rowLetter}</div>
+                          {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
+                            const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
+                            const isBooked = unavailableSeats.has(seatId);
+                            const isSelected = selectedSeats.includes(seatId);
+                            
+                            return (
+                              <button
+                                key={seatId}
+                                type="button"
+                                onClick={() => handleSeatClick(seatId)}
+                                disabled={isBooked}
+                                title={seatId}
+                                className={cn(
+                                  "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed",
+                                  isBooked 
+                                   ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
+                                   : isSelected 
+                                    ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
+                                    : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                                )}
+                              >
+                                 {cIndex + 1}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Screen Divider */}
+            <div className="w-full border-t-[8px] border-amber-500/20 mt-12 relative flex justify-center">
+              <span className="absolute -top-3 bg-[#111111] px-4 text-sm font-bold text-amber-500 tracking-[0.5em] uppercase">S c r e e n</span>
+              <div className="absolute bottom-0 w-3/4 h-32 bg-gradient-to-t from-amber-500/10 to-transparent blur-2xl pointer-events-none" />
+            </div>
+
+            {/* Legend & Summary */}
+            <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap gap-6 justify-between items-end">
+              <div className="flex gap-4 text-xs font-medium text-gray-400">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-white/10 border border-white/20 rounded-t-sm" /> Tersedia
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-amber-500 rounded-t-sm" /> Dipilih
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-white/5 border border-white/10 opacity-50 rounded-t-sm" /> Tidak Tersedia
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <div className="text-sm text-gray-400 mb-1">Tiket Terpilih</div>
+                <div className="text-xl font-bold font-display text-white">
+                  {selectedSeats.length} <span className="text-amber-500 text-base font-normal">Seat</span>
+                </div>
+              </div>
+            </div>
+
+          </CardContent>
+        </Card>
+      </div>
+
     </div>
+  </div>
   );
 }
