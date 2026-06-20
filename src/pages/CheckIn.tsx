@@ -10,6 +10,58 @@ import jsQR from 'jsqr';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2'; 
+const getCategoryColorObj = (seatIdOrType: string) => {
+  if (seatIdOrType.includes('VIP') || seatIdOrType.startsWith('V-')) return {
+    text: 'text-amber-500',
+    bg: 'bg-amber-500',
+    bgDim: 'bg-amber-500/20',
+    bgLight: 'bg-amber-500/10',
+    border: 'border-amber-400',
+    borderDim: 'border-amber-500/50',
+    shadow: 'shadow-[0_0_10px_rgba(245,158,11,0.3)]',
+    textChecked: 'text-black'
+  };
+  if (seatIdOrType.includes('Depan') || seatIdOrType.startsWith('RD-')) return {
+    text: 'text-green-500',
+    bg: 'bg-green-500',
+    bgDim: 'bg-green-500/20',
+    bgLight: 'bg-green-500/10',
+    border: 'border-green-400',
+    borderDim: 'border-green-500/50',
+    shadow: 'shadow-[0_0_10px_rgba(34,197,94,0.3)]',
+    textChecked: 'text-black'
+  };
+  if (seatIdOrType.includes('Tengah') || seatIdOrType.startsWith('RT-')) return {
+    text: 'text-red-500',
+    bg: 'bg-red-500',
+    bgDim: 'bg-red-500/20',
+    bgLight: 'bg-red-500/10',
+    border: 'border-red-400',
+    borderDim: 'border-red-500/50',
+    shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.3)]',
+    textChecked: 'text-white'
+  };
+  if (seatIdOrType.includes('Belakang') || seatIdOrType.startsWith('RB-')) return {
+    text: 'text-blue-500',
+    bg: 'bg-blue-500',
+    bgDim: 'bg-blue-500/20',
+    bgLight: 'bg-blue-500/10',
+    border: 'border-blue-400',
+    borderDim: 'border-blue-500/50',
+    shadow: 'shadow-[0_0_10px_rgba(59,130,246,0.3)]',
+    textChecked: 'text-white'
+  };
+  return {
+    text: 'text-gray-500',
+    bg: 'bg-gray-500',
+    bgDim: 'bg-gray-500/20',
+    bgLight: 'bg-gray-500/10',
+    border: 'border-gray-400',
+    borderDim: 'border-gray-500/50',
+    shadow: 'shadow-[0_0_10px_rgba(107,114,128,0.3)]',
+    textChecked: 'text-white'
+  };
+};
 
 export default function CheckIn() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -522,6 +574,7 @@ const downloadAttendancePDF = () => {
                     <div className="flex flex-wrap gap-2">
                       {ticket.seatNumbers.map((s: string) => {
                         const isChecked = currentCheckedInSeats.includes(s);
+                        const catColor = getCategoryColorObj(s);
                         return (
                         <button 
                           key={s} 
@@ -529,7 +582,7 @@ const downloadAttendancePDF = () => {
                           className={cn(
                             "text-[10px] font-mono px-2 py-1 rounded border transition-colors flex items-center justify-center gap-1",
                             isChecked 
-                              ? "bg-amber-500/10 border-amber-500/50 text-amber-500" 
+                              ? `${catColor.bgLight} border ${catColor.borderDim} ${catColor.text}` 
                               : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
                           )}
                         >
@@ -601,10 +654,20 @@ const downloadAttendancePDF = () => {
                     <div className="w-3 h-3 bg-white/10 border border-white/40 rounded-sm shadow-[0_0_8px_rgba(255,255,255,0.05)]" /> Tengah Layar
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-white/20 border border-gray-500 rounded-sm" /> Belum Datang
+                    <div className="flex gap-px border border-gray-500 rounded-sm overflow-hidden p-[1px] bg-white/5">
+                      <div className="w-1 h-2.5 bg-amber-500/40 rounded-sm" />
+                      <div className="w-1 h-2.5 bg-green-500/40 rounded-sm" />
+                      <div className="w-1 h-2.5 bg-red-500/40 rounded-sm" />
+                    </div>
+                    Belum Datang
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-amber-500 border border-amber-400 rounded-sm" /> Di Dalam
+                    <div className="flex gap-px rounded-sm overflow-hidden p-[1px] border border-transparent">
+                      <div className="w-1 h-2.5 bg-amber-500 rounded-sm" />
+                      <div className="w-1 h-2.5 bg-green-500 rounded-sm" />
+                      <div className="w-1 h-2.5 bg-red-500 rounded-sm" />
+                    </div>
+                    Di Dalam
                   </div>
                 </div>
               </div>
@@ -614,14 +677,8 @@ const downloadAttendancePDF = () => {
                 {(Object.keys(PRICING) as SeatType[]).map(type => {
                   const currentTypeInfo = PRICING[type];
                   
-                  const getCategoryColor = (t: string) => {
-                    if (t.includes('VIP')) return 'text-amber-500';
-                    if (t.includes('Depan')) return 'text-green-500';
-                    if (t.includes('Tengah')) return 'text-red-500';
-                    if (t.includes('Belakang')) return 'text-blue-500';
-                    return 'text-gray-500';
-                  };
-                  const colorClass = getCategoryColor(type);
+                  const catColor = getCategoryColorObj(type);
+                  const colorClass = catColor.text;
 
                   // Warna seragam untuk 4 kursi tengah di semua tipe (versi Check-In)
                   const centerSeatClass = 'bg-white/10 border-white/40 text-gray-300 shadow-[0_0_8px_rgba(255,255,255,0.05)]';
@@ -652,9 +709,9 @@ const downloadAttendancePDF = () => {
                                   className={cn(
                                     "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 relative",
                                     isCheckedIn 
-                                      ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)] z-10"
+                                      ? `${catColor.bg} border ${catColor.border} ${catColor.textChecked} ${catColor.shadow} z-10`
                                       : isBooked
-                                        ? "bg-white/20 border border-gray-500 text-gray-300"
+                                        ? `${catColor.bgDim} border ${catColor.borderDim} ${catColor.text}`
                                         : isCenterSeat
                                           ? cn("border font-bold", centerSeatClass)
                                           : "bg-white/5 border border-white/10 text-gray-700"
