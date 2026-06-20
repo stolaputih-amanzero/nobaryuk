@@ -566,7 +566,6 @@ export default function BookTickets() {
             <div className="flex flex-col gap-8 w-full items-center">
               {(Object.keys(PRICING) as SeatType[]).map(type => {
                 const currentTypeInfo = PRICING[type];
-                
                 const getCategoryColor = (t: string) => {
                   if (t.includes('VIP')) return 'text-amber-500';
                   if (t.includes('Depan')) return 'text-green-500';
@@ -576,12 +575,25 @@ export default function BookTickets() {
                 };
                 const colorClass = getCategoryColor(type);
 
+                const getCenterSeatClass = (t: string) => {
+                  if (t.includes('VIP')) return 'bg-amber-500/20 border-amber-500/50 text-amber-200 hover:bg-amber-500/30';
+                  if (t.includes('Depan')) return 'bg-green-500/20 border-green-500/50 text-green-200 hover:bg-green-500/30';
+                  if (t.includes('Tengah')) return 'bg-red-500/20 border-red-500/50 text-red-200 hover:bg-red-500/30';
+                  if (t.includes('Belakang')) return 'bg-blue-500/20 border-blue-500/50 text-blue-200 hover:bg-blue-500/30';
+                  return 'bg-white/20 border-white/50 text-white hover:bg-white/30';
+                };
+                const centerSeatClass = getCenterSeatClass(type);
+
                 return (
                   <div key={type} className="flex flex-col items-center w-full">
                     <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
                     <div className="flex flex-col gap-2 w-full items-center">
                       {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                         const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
+                        
+                        // Cari indeks untuk 4 kursi di tengah
+                        const centerStartIndex = Math.floor((currentTypeInfo.cols - 4) / 2);
+
                         return (
                         <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
                           <div className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px] mr-1", colorClass)}>{rowLetter}</div>
@@ -589,6 +601,7 @@ export default function BookTickets() {
                             const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
                             const isBooked = unavailableSeats.has(seatId);
                             const isSelected = selectedSeats.includes(seatId);
+                            const isCenterSeat = cIndex >= centerStartIndex && cIndex < centerStartIndex + 4;
                             
                             return (
                               <button
@@ -596,14 +609,16 @@ export default function BookTickets() {
                                 type="button"
                                 onClick={() => handleSeatClick(seatId)}
                                 disabled={isBooked}
-                                title={seatId}
+                                title={isCenterSeat ? `${seatId} (Kursi Tengah)` : seatId}
                                 className={cn(
-                                  "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed",
+                                  "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed relative",
                                   isBooked 
                                    ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
                                    : isSelected 
-                                    ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110" 
-                                    : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                                    ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110 z-10" 
+                                    : isCenterSeat 
+                                      ? cn("border font-bold shadow-[0_0_8px_rgba(255,255,255,0.05)]", centerSeatClass)
+                                      : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
                                 )}
                               >
                                  {cIndex + 1}

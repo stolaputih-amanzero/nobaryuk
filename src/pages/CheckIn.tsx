@@ -620,12 +620,25 @@ const downloadAttendancePDF = () => {
                   };
                   const colorClass = getCategoryColor(type);
 
+                  const getCenterSeatClass = (t: string) => {
+                    if (t.includes('VIP')) return 'bg-amber-500/10 border-amber-500/30 text-amber-500/50';
+                    if (t.includes('Depan')) return 'bg-green-500/10 border-green-500/30 text-green-500/50';
+                    if (t.includes('Tengah')) return 'bg-red-500/10 border-red-500/30 text-red-500/50';
+                    if (t.includes('Belakang')) return 'bg-blue-500/10 border-blue-500/30 text-blue-500/50';
+                    return 'bg-white/10 border-white/30 text-gray-500';
+                  };
+                  const centerSeatClass = getCenterSeatClass(type);
+
                   return (
                     <div key={type} className="flex flex-col items-center">
                       <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
                       <div className="flex flex-col gap-2 w-full items-center">
                         {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                           const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
+                          
+                          // Cari indeks untuk 4 kursi di tengah
+                          const centerStartIndex = Math.floor((currentTypeInfo.cols - 4) / 2);
+
                           return (
                           <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
                             <div className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px] mr-1", colorClass)}>{rowLetter}</div>
@@ -633,18 +646,21 @@ const downloadAttendancePDF = () => {
                               const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
                               const isBooked = bookedSeats.has(seatId);
                               const isCheckedIn = checkedInSeats.has(seatId);
+                              const isCenterSeat = cIndex >= centerStartIndex && cIndex < centerStartIndex + 4;
                               
                               return (
                                 <div
                                   key={seatId}
-                                  title={seatId}
+                                  title={isCenterSeat ? `${seatId} (Kursi Tengah)` : seatId}
                                   className={cn(
-                                    "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300",
+                                    "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 relative",
                                     isCheckedIn 
-                                      ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                                      ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)] z-10"
                                       : isBooked
                                         ? "bg-white/20 border border-gray-500 text-gray-300"
-                                        : "bg-white/5 border border-white/10 text-gray-700"
+                                        : isCenterSeat
+                                          ? cn("border font-bold", centerSeatClass)
+                                          : "bg-white/5 border border-white/10 text-gray-700"
                                   )}
                                 >
                                    {cIndex + 1}
