@@ -569,9 +569,9 @@ export default function BookTickets() {
                 
                 const getCategoryColor = (t: string) => {
                   if (t.includes('VIP')) return 'text-amber-500';
-                  if (t.includes('Depan')) return 'text-purple-400';
-                  if (t.includes('Tengah')) return 'text-emerald-400';
-                  if (t.includes('Belakang')) return 'text-blue-400';
+                  if (t.includes('Depan')) return 'text-green-500';
+                  if (t.includes('Tengah')) return 'text-red-500';
+                  if (t.includes('Belakang')) return 'text-blue-500';
                   return 'text-gray-500';
                 };
                 const colorClass = getCategoryColor(type);
