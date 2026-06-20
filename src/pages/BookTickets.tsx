@@ -566,15 +566,25 @@ export default function BookTickets() {
             <div className="flex flex-col gap-8 w-full items-center">
               {(Object.keys(PRICING) as SeatType[]).map(type => {
                 const currentTypeInfo = PRICING[type];
+                
+                const getCategoryColor = (t: string) => {
+                  if (t.includes('VIP')) return 'text-amber-500';
+                  if (t.includes('Depan')) return 'text-purple-400';
+                  if (t.includes('Tengah')) return 'text-emerald-400';
+                  if (t.includes('Belakang')) return 'text-blue-400';
+                  return 'text-gray-500';
+                };
+                const colorClass = getCategoryColor(type);
+
                 return (
                   <div key={type} className="flex flex-col items-center w-full">
-                    <div className="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 text-center">{type}</div>
+                    <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
                     <div className="flex flex-col gap-2 w-full items-center">
                       {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
                         const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
                         return (
                         <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
-                          <div className="w-6 shrink-0 flex items-center justify-center text-gray-600 font-mono text-[10px] mr-1">{rowLetter}</div>
+                          <div className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px] mr-1", colorClass)}>{rowLetter}</div>
                           {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
                             const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
                             const isBooked = unavailableSeats.has(seatId);
