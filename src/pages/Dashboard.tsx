@@ -80,7 +80,6 @@ export default function Dashboard() {
     bookings.forEach(b => {
       revenue += b.totalPrice;
       soldSeats += b.seatNumbers.length;
-      cost += b.totalCost;
       
       marketingStats[b.marketingName] = (marketingStats[b.marketingName] || 0) + b.seatNumbers.length;
       if (typeStats[b.seatType] !== undefined) {
@@ -88,7 +87,17 @@ export default function Dashboard() {
       }
     });
 
-    return { revenue, cost, profit: revenue - cost, soldSeats, marketingStats, typeStats };
+    let potentialRevenue = 0;
+    Object.entries(PRICING).forEach(([type, info]) => {
+      const sold = typeStats[type] || 0;
+      const remaining = info.capacity - sold;
+      if (remaining > 0) {
+        potentialRevenue += remaining * info.price;
+      }
+    });
+
+    const fixedCost = 76695000;
+    return { revenue, cost: fixedCost, profit: revenue - fixedCost, soldSeats, marketingStats, typeStats, potentialRevenue };
   }, [bookings]);
 
   const totalCapacity = Object.values(PRICING).reduce((acc, curr) => acc + curr.capacity, 0);
@@ -144,10 +153,11 @@ export default function Dashboard() {
       ) : (
         <>
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <MetricCard title="Total Penjualan" value={formatRupiah(stats.revenue)} icon={<TrendingUp />} />
             <MetricCard title="Total Cost Cinepolis" value={formatRupiah(stats.cost)} icon={<DollarSign />} />
             <MetricCard title="Proyeksi Laba Bersih" value={formatRupiah(stats.profit)} icon={<CheckCircle2 />} className="text-green-500" />
+            <MetricCard title="Potensi Sisa Penjualan" value={formatRupiah(stats.potentialRevenue)} icon={<DollarSign />} className="text-blue-400" />
             <MetricCard title="Tiket Terjual" value={`${stats.soldSeats} / ${totalCapacity}`} icon={<Ticket />} />
           </div>
 
@@ -164,9 +174,14 @@ export default function Dashboard() {
                   const percent = (sold / info.capacity) * 100;
                   return (
                     <div key={type}>
-                      <div className="flex justify-between text-sm mb-2">
+                      <div className="flex justify-between text-sm mb-2 items-end">
                         <span className="text-gray-300">{type}</span>
-                        <span className="font-mono text-gray-400">{info.capacity - sold} sisa</span>
+                        <div className="font-mono text-right">
+                          <span className="text-amber-500">{sold}</span>
+                          <span className="text-gray-500">/{info.capacity} terjual</span>
+                          <span className="text-gray-600 mx-2">|</span>
+                          <span className="text-gray-400">{info.capacity - sold} sisa</span>
+                        </div>
                       </div>
                       <div className="w-full bg-white/10 rounded-full h-2.5">
                         <div className="bg-amber-500 h-2.5 rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}></div>
