@@ -1,6 +1,6 @@
 supabase
 
-org name:
+org name
 flow_project
 
 project name:
