@@ -423,6 +423,135 @@ const downloadAttendancePDF = () => {
     return { bookedSeats: booked, checkedInSeats: checkedIn };
   }, [bookings]);
 
+  const regularLayout = useMemo(() => {
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M'];
+    return rows.map(rowLetter => {
+      let cells: Array<{
+        type: 'seat' | 'stairs' | 'entrance' | 'black' | 'label';
+        id?: string;
+        label?: string;
+        category?: 'Depan' | 'Tengah' | 'Belakang';
+      }> = [];
+      
+      cells.push({ type: 'label', label: rowLetter });
+      
+      if (['K', 'L', 'M'].includes(rowLetter)) {
+        // Row K-M: Left seats 1-6, Stairs (2 cols), Middle seats 7-26, Stairs (2 cols), Right seats 27-32
+        for (let i = 1; i <= 6; i++) {
+          cells.push({ type: 'seat', id: `RD-${rowLetter}${i}`, label: `${i}`, category: 'Depan' });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 7; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RD-${rowLetter}${i}`, label: `${i}`, category: 'Depan' });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 27; i <= 32; i++) {
+          cells.push({ type: 'seat', id: `RD-${rowLetter}${i}`, label: `${i}`, category: 'Depan' });
+        }
+      } else if (rowLetter === 'A') {
+        // Row A: Entrance (2 cols), Black buffer (6 cols), Seats A1-A26 (26 cols), Entrance (2 cols), Label
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+        for (let i = 0; i < 6; i++) cells.push({ type: 'black' });
+        for (let i = 1; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RB-A${i}`, label: `${i}`, category: 'Belakang' });
+        }
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+      } else if (rowLetter === 'B') {
+        // Row B: Entrance (2 cols), Black buffer (3 cols), Seats B1-B26 (26 cols), Black buffer (3 cols), Entrance (2 cols)
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+        for (let i = 0; i < 3; i++) cells.push({ type: 'black' });
+        for (let i = 1; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RB-B${i}`, label: `${i}`, category: 'Belakang' });
+        }
+        for (let i = 0; i < 3; i++) cells.push({ type: 'black' });
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+      } else {
+        // Rows C-J: Entrance (2 cols), Black buffer (1 col), Seats 1-3 (3 cols), Stairs (2 cols), Middle seats 4-23 (20 cols), Stairs (2 cols), Right seats 24-26 (3 cols), Black buffer (1 col), Entrance (2 cols)
+        const cat = 'Tengah';
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+        cells.push({ type: 'black' });
+        for (let i = 1; i <= 3; i++) {
+          cells.push({ type: 'seat', id: `RT-${rowLetter}${i}`, label: `${i}`, category: cat });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 4; i <= 23; i++) {
+          cells.push({ type: 'seat', id: `RT-${rowLetter}${i}`, label: `${i}`, category: cat });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 24; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RT-${rowLetter}${i}`, label: `${i}`, category: cat });
+        }
+        cells.push({ type: 'black' });
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+      }
+      
+      cells.push({ type: 'label', label: rowLetter });
+      return { rowLetter, cells };
+    });
+  }, []);
+
+  const vipLayout = useMemo(() => {
+    const rows = ['A', 'B', 'C'];
+    return rows.map(rowLetter => {
+      let cells: Array<{
+        type: 'seat' | 'stairs' | 'gap' | 'label';
+        id?: string;
+        label?: string;
+      }> = [];
+      
+      cells.push({ type: 'label', label: rowLetter });
+      
+      const addPair = (start: number, end: number) => {
+        for (let i = start; i <= end; i++) {
+          cells.push({ type: 'seat', id: `V-${rowLetter}${i}`, label: `${i}` });
+        }
+      };
+      
+      addPair(1, 2);
+      cells.push({ type: 'gap' });
+      addPair(3, 4);
+      cells.push({ type: 'gap' });
+      addPair(5, 6);
+      cells.push({ type: 'gap' });
+      
+      // Left Stairs (double-width cell)
+      cells.push({ type: 'stairs', label: rowLetter === 'B' ? 'STAIRS' : '' });
+      cells.push({ type: 'gap' });
+      
+      addPair(7, 8);
+      cells.push({ type: 'gap' });
+      addPair(9, 10);
+      cells.push({ type: 'gap' });
+      addPair(11, 12);
+      cells.push({ type: 'gap' });
+      addPair(13, 14);
+      cells.push({ type: 'gap' });
+      addPair(15, 16);
+      cells.push({ type: 'gap' });
+      
+      // Right Stairs (double-width cell)
+      cells.push({ type: 'stairs', label: rowLetter === 'B' ? 'STAIRS' : '' });
+      cells.push({ type: 'gap' });
+      
+      addPair(17, 18);
+      cells.push({ type: 'gap' });
+      addPair(19, 20);
+      
+      cells.push({ type: 'label', label: rowLetter });
+      return { rowLetter, cells };
+    });
+  }, []);
+
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) {
       return showAll ? bookings : bookings.slice(0, 10);
@@ -665,53 +794,189 @@ const downloadAttendancePDF = () => {
               {/* Seat Grid - Posisinya Dinaikkan Ke Atas */}
               <div className="flex flex-col gap-8">
                 {(Object.keys(PRICING) as SeatType[]).map(type => {
-                  const currentTypeInfo = PRICING[type];
-                  
-                  const catColor = getCategoryColorObj(type);
-                  const colorClass = catColor.text;
+                  if (type === 'Reguler - Depan' || type === 'Reguler - Belakang') return null;
 
-                  // Warna seragam untuk 4 kursi tengah di semua tipe (versi Check-In)
-                  const centerSeatClass = 'bg-white/10 border-white/40 text-gray-300 shadow-[0_0_8px_rgba(255,255,255,0.05)]';
+                  if (type === 'VIP') {
+                    const catColor = getCategoryColorObj(type);
+                    const colorClass = catColor.text;
 
+                    return (
+                      <div key={type} className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 pb-4">
+                        <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
+                        <div className="flex flex-col gap-2 mx-auto w-max min-w-max px-4">
+                          {vipLayout.map(({ rowLetter, cells }) => {
+                            return (
+                              <div key={rowLetter} className="flex justify-center gap-1">
+                                {cells.map((cell, colIndex) => {
+                                  if (cell.type === 'label') {
+                                    return (
+                                      <div
+                                        key={colIndex}
+                                        className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px]", colorClass)}
+                                      >
+                                        {cell.label}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (cell.type === 'gap') {
+                                    return (
+                                      <div key={colIndex} className="w-1.5 md:w-2 shrink-0" />
+                                    );
+                                  }
+
+                                  if (cell.type === 'stairs') {
+                                    return (
+                                      <div
+                                        key={colIndex}
+                                        className="bg-blue-500/10 border border-blue-500/20 text-blue-400/80 text-[8px] font-extrabold shrink-0 w-[42px] h-5 md:w-[50px] md:h-6 flex items-center justify-center rounded-sm select-none"
+                                        title="Stairs"
+                                      >
+                                        {cell.label}
+                                      </div>
+                                    );
+                                  }
+
+                                  const seatId = cell.id!;
+                                  const isBooked = bookedSeats.has(seatId);
+                                  const isCheckedIn = checkedInSeats.has(seatId);
+
+                                  return (
+                                    <div
+                                      key={seatId}
+                                      title={seatId}
+                                      className={cn(
+                                        "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 relative",
+                                        isCheckedIn
+                                          ? `${catColor.bg} border ${catColor.border} ${catColor.textChecked} ${catColor.shadow} z-10`
+                                          : isBooked
+                                            ? `${catColor.bgDim} border ${catColor.borderDim} ${catColor.text}`
+                                            : "bg-white/5 border border-white/10 text-gray-700"
+                                      )}
+                                    >
+                                      {cell.label}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Unified Regular Seat Layout (Rendered when type is 'Reguler - Tengah')
                   return (
-                    <div key={type} className="flex flex-col items-center">
-                      <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
-                      <div className="flex flex-col gap-2 w-full items-center">
-                        {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
-                          const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
-                          
-                          // Cari indeks untuk 4 kursi di tengah
-                          const centerStartIndex = Math.floor((currentTypeInfo.cols - 4) / 2);
+                    <div key="Regular-Unified" className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 pb-4">
+                      <div className="text-[10px] font-bold uppercase tracking-widest mb-4 text-center text-gray-400">Regular Seats</div>
+                      <div className="flex flex-col gap-2 mx-auto w-max min-w-max px-4">
+                        {regularLayout.map(({ rowLetter, cells }) => {
+                          const isRowK = rowLetter === 'K';
 
                           return (
-                          <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
-                            <div className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px] mr-1", colorClass)}>{rowLetter}</div>
-                            {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
-                              const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
-                              const isBooked = bookedSeats.has(seatId);
-                              const isCheckedIn = checkedInSeats.has(seatId);
-                              const isCenterSeat = cIndex >= centerStartIndex && cIndex < centerStartIndex + 4;
-                              
-                              return (
-                                <div
-                                  key={seatId}
-                                  title={isCenterSeat ? `${seatId} (Kursi Tengah)` : seatId}
-                                  className={cn(
-                                    "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 relative",
-                                    isCheckedIn 
-                                      ? `${catColor.bg} border ${catColor.border} ${catColor.textChecked} ${catColor.shadow} z-10`
-                                      : isBooked
-                                        ? `${catColor.bgDim} border ${catColor.borderDim} ${catColor.text}`
-                                        : isCenterSeat
-                                          ? cn("border font-bold", centerSeatClass)
-                                          : "bg-white/5 border border-white/10 text-gray-700"
-                                  )}
-                                >
-                                   {cIndex + 1}
+                            <React.Fragment key={rowLetter}>
+                              {isRowK && (
+                                <div className="w-full h-8 flex items-center justify-center bg-zinc-900/40 my-3 rounded border border-white/5 relative">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-505">AISLE / JALAN</span>
                                 </div>
-                              )
-                            })}
-                          </div>
+                              )}
+                              <div className="flex justify-center gap-1">
+                                {cells.map((cell, colIndex) => {
+                                  if (cell.type === 'label') {
+                                    let labelColor = 'text-gray-500';
+                                    if (['A', 'B'].includes(rowLetter)) labelColor = 'text-blue-500';
+                                    else if (['K', 'L', 'M'].includes(rowLetter)) labelColor = 'text-green-500';
+                                    else labelColor = 'text-red-500';
+
+                                    return (
+                                      <div
+                                        key={colIndex}
+                                        className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px]", labelColor)}
+                                      >
+                                        {cell.label}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (cell.type === 'black') {
+                                    return (
+                                      <div key={colIndex} className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
+                                    );
+                                  }
+
+                                  if (cell.type === 'entrance') {
+                                    let char = '';
+                                    if (colIndex === 1 || colIndex === 35) {
+                                      const charMap: Record<string, string> = {
+                                        B: 'E', C: 'N', D: 'T', E: 'R', F: 'A', G: 'N', H: 'C', J: 'E'
+                                      };
+                                      char = charMap[rowLetter] || '';
+                                    }
+                                    return (
+                                      <div
+                                        key={colIndex}
+                                        className="bg-amber-500/10 border border-amber-500/20 text-amber-500/80 text-[8px] font-extrabold shrink-0 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-sm select-none"
+                                        title="Entrance"
+                                      >
+                                        {char}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (cell.type === 'stairs') {
+                                    let char = '';
+                                    if (colIndex === 8) {
+                                      const leftStairsMap: Record<string, string> = {
+                                        C: 'S', D: 'T', E: 'A', F: 'I', G: 'R', H: 'S', J: '•', K: 'S', L: 'T', M: 'A'
+                                      };
+                                      char = leftStairsMap[rowLetter] || '';
+                                    } else if (colIndex === 29) {
+                                      const rightStairsMap: Record<string, string> = {
+                                        C: 'S', D: 'T', E: 'A', F: 'I', G: 'R', H: 'S', J: '•', K: 'S', L: 'T', M: 'A'
+                                      };
+                                      char = rightStairsMap[rowLetter] || '';
+                                    }
+                                    return (
+                                      <div
+                                        key={colIndex}
+                                        className="bg-blue-500/10 border border-blue-500/20 text-blue-400/80 text-[8px] font-extrabold shrink-0 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-sm select-none"
+                                        title="Stairs"
+                                      >
+                                        {char}
+                                      </div>
+                                    );
+                                  }
+
+                                  const seatId = cell.id!;
+                                  const isBooked = bookedSeats.has(seatId);
+                                  const isCheckedIn = checkedInSeats.has(seatId);
+                                  const isCenterSeat = colIndex >= 18 && colIndex <= 21;
+
+                                  const catColor = getCategoryColorObj(seatId);
+                                  const centerSeatClass = 'bg-white/10 border-white/40 text-gray-300 shadow-[0_0_8px_rgba(255,255,255,0.05)]';
+
+                                  return (
+                                    <div
+                                      key={seatId}
+                                      title={isCenterSeat ? `${seatId} (Kursi Tengah)` : seatId}
+                                      className={cn(
+                                        "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 relative",
+                                        isCheckedIn
+                                          ? `${catColor.bg} border ${catColor.border} ${catColor.textChecked} ${catColor.shadow} z-10`
+                                          : isBooked
+                                            ? `${catColor.bgDim} border ${catColor.borderDim} ${catColor.text}`
+                                            : isCenterSeat
+                                              ? cn("border font-bold", centerSeatClass)
+                                              : "bg-white/5 border border-white/10 text-gray-700"
+                                      )}
+                                    >
+                                      {cell.label}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </React.Fragment>
                           );
                         })}
                       </div>

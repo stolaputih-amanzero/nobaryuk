@@ -25,7 +25,7 @@ export interface TicketBooking {
 
 export const PRICING = {
   'Reguler - Belakang': { price: 500000, cost: 150000, capacity: 52, rows: 2, cols: 26, prefix: 'RB', rowLetters: ['A', 'B'] },
-  'Reguler - Tengah': { price: 750000, cost: 150000, capacity: 182, rows: 7, cols: 26, prefix: 'RT', rowLetters: ['C', 'D', 'E', 'F', 'G', 'H', 'I'] },
+  'Reguler - Tengah': { price: 750000, cost: 150000, capacity: 182, rows: 7, cols: 26, prefix: 'RT', rowLetters: ['C', 'D', 'E', 'F', 'G', 'H', 'J'] },
   'Reguler - Depan': { price: 250000, cost: 150000, capacity: 96, rows: 3, cols: 32, prefix: 'RD', rowLetters: ['K', 'L', 'M'] },
   'VIP': { price: 2500000, cost: 600000, capacity: 60, rows: 3, cols: 20, prefix: 'V', rowLetters: ['A', 'B', 'C'] }
 };

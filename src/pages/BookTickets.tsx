@@ -142,6 +142,136 @@ export default function BookTickets() {
 
   const currentTypeInfo = PRICING[form.seatType];
 
+  const regularLayout = useMemo(() => {
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M'];
+    return rows.map(rowLetter => {
+      let cells: Array<{
+        type: 'seat' | 'stairs' | 'entrance' | 'black' | 'label';
+        id?: string;
+        label?: string;
+        category?: 'Depan' | 'Tengah' | 'Belakang';
+      }> = [];
+      
+      cells.push({ type: 'label', label: rowLetter });
+      
+      if (['K', 'L', 'M'].includes(rowLetter)) {
+        // Row K-M: Left seats 1-6, Stairs (2 cols), Middle seats 7-26, Stairs (2 cols), Right seats 27-32
+        for (let i = 1; i <= 6; i++) {
+          cells.push({ type: 'seat', id: `RD-${rowLetter}${i}`, label: `${i}`, category: 'Depan' });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 7; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RD-${rowLetter}${i}`, label: `${i}`, category: 'Depan' });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 27; i <= 32; i++) {
+          cells.push({ type: 'seat', id: `RD-${rowLetter}${i}`, label: `${i}`, category: 'Depan' });
+        }
+      } else if (rowLetter === 'A') {
+        // Row A: Entrance (2 cols), Black buffer (6 cols), Seats A1-A26 (26 cols), Entrance (2 cols), Label
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+        for (let i = 0; i < 6; i++) cells.push({ type: 'black' });
+        for (let i = 1; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RB-A${i}`, label: `${i}`, category: 'Belakang' });
+        }
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+      } else if (rowLetter === 'B') {
+        // Row B: Entrance (2 cols), Black buffer (3 cols), Seats B1-B26 (26 cols), Black buffer (3 cols), Entrance (2 cols)
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+        for (let i = 0; i < 3; i++) cells.push({ type: 'black' });
+        for (let i = 1; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RB-B${i}`, label: `${i}`, category: 'Belakang' });
+        }
+        for (let i = 0; i < 3; i++) cells.push({ type: 'black' });
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+      } else {
+        // Rows C-J: Entrance (2 cols), Black buffer (1 col), Seats 1-3 (3 cols), Stairs (2 cols), Middle seats 4-23 (20 cols), Stairs (2 cols), Right seats 24-26 (3 cols), Black buffer (1 col), Entrance (2 cols)
+        const cat = 'Tengah';
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+        cells.push({ type: 'black' });
+        for (let i = 1; i <= 3; i++) {
+          cells.push({ type: 'seat', id: `RT-${rowLetter}${i}`, label: `${i}`, category: cat });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 4; i <= 23; i++) {
+          cells.push({ type: 'seat', id: `RT-${rowLetter}${i}`, label: `${i}`, category: cat });
+        }
+        cells.push({ type: 'stairs', label: 'STAIRS' });
+        cells.push({ type: 'stairs' });
+        for (let i = 24; i <= 26; i++) {
+          cells.push({ type: 'seat', id: `RT-${rowLetter}${i}`, label: `${i}`, category: cat });
+        }
+        cells.push({ type: 'black' });
+        cells.push({ type: 'entrance', label: 'ENTRANCE' });
+        cells.push({ type: 'entrance' });
+      }
+      
+      cells.push({ type: 'label', label: rowLetter });
+      return { rowLetter, cells };
+    });
+  }, []);
+
+  const vipLayout = useMemo(() => {
+    const rows = ['A', 'B', 'C'];
+    return rows.map(rowLetter => {
+      let cells: Array<{
+        type: 'seat' | 'stairs' | 'gap' | 'label';
+        id?: string;
+        label?: string;
+      }> = [];
+      
+      cells.push({ type: 'label', label: rowLetter });
+      
+      const addPair = (start: number, end: number) => {
+        for (let i = start; i <= end; i++) {
+          cells.push({ type: 'seat', id: `V-${rowLetter}${i}`, label: `${i}` });
+        }
+      };
+      
+      addPair(1, 2);
+      cells.push({ type: 'gap' });
+      addPair(3, 4);
+      cells.push({ type: 'gap' });
+      addPair(5, 6);
+      cells.push({ type: 'gap' });
+      
+      // Left Stairs (double-width cell)
+      cells.push({ type: 'stairs', label: rowLetter === 'B' ? 'STAIRS' : '' });
+      cells.push({ type: 'gap' });
+      
+      addPair(7, 8);
+      cells.push({ type: 'gap' });
+      addPair(9, 10);
+      cells.push({ type: 'gap' });
+      addPair(11, 12);
+      cells.push({ type: 'gap' });
+      addPair(13, 14);
+      cells.push({ type: 'gap' });
+      addPair(15, 16);
+      cells.push({ type: 'gap' });
+      
+      // Right Stairs (double-width cell)
+      cells.push({ type: 'stairs', label: rowLetter === 'B' ? 'STAIRS' : '' });
+      cells.push({ type: 'gap' });
+      
+      addPair(17, 18);
+      cells.push({ type: 'gap' });
+      addPair(19, 20);
+      
+      cells.push({ type: 'label', label: rowLetter });
+      return { rowLetter, cells };
+    });
+  }, []);
+
+
   const handleSeatClick = (seatId: string) => {
     if (unavailableSeats.has(seatId)) return;
     setSelectedSeats(prev => 
@@ -565,61 +695,193 @@ export default function BookTickets() {
             {/* Seat Grid - Render All Types */}
             <div className="flex flex-col gap-8 w-full items-center">
               {(Object.keys(PRICING) as SeatType[]).map(type => {
-                const currentTypeInfo = PRICING[type];
-                const getCategoryColor = (t: string) => {
-                  if (t.includes('VIP')) return 'text-amber-500';
-                  if (t.includes('Depan')) return 'text-green-500';
-                  if (t.includes('Tengah')) return 'text-red-500';
-                  if (t.includes('Belakang')) return 'text-blue-500';
-                  return 'text-gray-500';
-                };
-                const colorClass = getCategoryColor(type);
+                if (type === 'Reguler - Depan' || type === 'Reguler - Belakang') return null;
 
-                // Warna seragam untuk 4 kursi tengah di semua tipe
-                const centerSeatClass = 'bg-white/15 border-white/50 text-white hover:bg-white/30 shadow-[0_0_8px_rgba(255,255,255,0.15)]';
+                if (type === 'VIP') {
+                  const colorClass = 'text-amber-500';
 
+                  return (
+                    <div key={type} className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 pb-4">
+                      <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
+                      <div className="flex flex-col gap-2 mx-auto w-max min-w-max px-4">
+                        {vipLayout.map(({ rowLetter, cells }) => {
+                          return (
+                            <div key={rowLetter} className="flex justify-center gap-1">
+                              {cells.map((cell, colIndex) => {
+                                if (cell.type === 'label') {
+                                  return (
+                                    <div
+                                      key={colIndex}
+                                      className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px]", colorClass)}
+                                    >
+                                      {cell.label}
+                                    </div>
+                                  );
+                                }
+
+                                if (cell.type === 'gap') {
+                                  return (
+                                    <div key={colIndex} className="w-1.5 md:w-2 shrink-0" />
+                                  );
+                                }
+
+                                if (cell.type === 'stairs') {
+                                  return (
+                                    <div
+                                      key={colIndex}
+                                      className="bg-blue-500/10 border border-blue-500/20 text-blue-400/80 text-[8px] font-extrabold shrink-0 w-[42px] h-5 md:w-[50px] md:h-6 flex items-center justify-center rounded-sm select-none"
+                                      title="Stairs"
+                                    >
+                                      {cell.label}
+                                    </div>
+                                  );
+                                }
+
+                                const seatId = cell.id!;
+                                const isBooked = unavailableSeats.has(seatId);
+                                const isSelected = selectedSeats.includes(seatId);
+
+                                return (
+                                  <button
+                                    key={seatId}
+                                    type="button"
+                                    onClick={() => handleSeatClick(seatId)}
+                                    disabled={isBooked}
+                                    title={seatId}
+                                    className={cn(
+                                      "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed relative",
+                                      isBooked
+                                        ? "bg-white/5 text-gray-600 opacity-50 border border-white/10"
+                                        : isSelected
+                                          ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110 z-10"
+                                          : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                                    )}
+                                  >
+                                    {cell.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Unified Regular Seat Layout (Rendered when type is 'Reguler - Tengah')
                 return (
-                  <div key={type} className="flex flex-col items-center w-full">
-                    <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-3 text-center", colorClass)}>{type}</div>
-                    <div className="flex flex-col gap-2 w-full items-center">
-                      {Array.from({ length: currentTypeInfo.rows }).map((_, rIndex) => {
-                        const rowLetter = currentTypeInfo.rowLetters ? currentTypeInfo.rowLetters[rIndex] : String.fromCharCode(65 + rIndex);
-                        
-                        // Cari indeks untuk 4 kursi di tengah
-                        const centerStartIndex = Math.floor((currentTypeInfo.cols - 4) / 2);
+                  <div key="Regular-Unified" className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 pb-4">
+                    <div className="text-[10px] font-bold uppercase tracking-widest mb-4 text-center text-gray-400">Regular Seats</div>
+                    <div className="flex flex-col gap-2 mx-auto w-max min-w-max px-4">
+                      {regularLayout.map(({ rowLetter, cells }) => {
+                        const isRowK = rowLetter === 'K';
 
                         return (
-                        <div key={rIndex} className="flex flex-wrap justify-center gap-1.5">
-                          <div className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px] mr-1", colorClass)}>{rowLetter}</div>
-                          {Array.from({ length: currentTypeInfo.cols }).map((_, cIndex) => {
-                            const seatId = `${currentTypeInfo.prefix}-${rowLetter}${cIndex + 1}`;
-                            const isBooked = unavailableSeats.has(seatId);
-                            const isSelected = selectedSeats.includes(seatId);
-                            const isCenterSeat = cIndex >= centerStartIndex && cIndex < centerStartIndex + 4;
-                            
-                            return (
-                              <button
-                                key={seatId}
-                                type="button"
-                                onClick={() => handleSeatClick(seatId)}
-                                disabled={isBooked}
-                                title={isCenterSeat ? `${seatId} (Kursi Tengah)` : seatId}
-                                className={cn(
-                                  "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed relative",
-                                  isBooked 
-                                   ? "bg-white/5 text-gray-600 opacity-50 border border-white/10" 
-                                   : isSelected 
-                                    ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110 z-10" 
-                                    : isCenterSeat 
-                                      ? cn("border font-bold", centerSeatClass)
-                                      : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
-                                )}
-                              >
-                                 {cIndex + 1}
-                              </button>
-                            )
-                          })}
-                        </div>
+                          <React.Fragment key={rowLetter}>
+                            {isRowK && (
+                              <div className="w-full h-8 flex items-center justify-center bg-zinc-900/40 my-3 rounded border border-white/5 relative">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">AISLE / JALAN</span>
+                              </div>
+                            )}
+                            <div className="flex justify-center gap-1">
+                              {cells.map((cell, colIndex) => {
+                                if (cell.type === 'label') {
+                                  let labelColor = 'text-gray-500';
+                                  if (['A', 'B'].includes(rowLetter)) labelColor = 'text-blue-500';
+                                  else if (['K', 'L', 'M'].includes(rowLetter)) labelColor = 'text-green-500';
+                                  else labelColor = 'text-red-500';
+
+                                  return (
+                                    <div
+                                      key={colIndex}
+                                      className={cn("w-6 shrink-0 flex items-center justify-center font-bold font-mono text-[10px]", labelColor)}
+                                    >
+                                      {cell.label}
+                                    </div>
+                                  );
+                                }
+
+                                if (cell.type === 'black') {
+                                  return (
+                                    <div key={colIndex} className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
+                                  );
+                                }
+
+                                if (cell.type === 'entrance') {
+                                  let char = '';
+                                  if (colIndex === 1 || colIndex === 35) {
+                                    const charMap: Record<string, string> = {
+                                      B: 'E', C: 'N', D: 'T', E: 'R', F: 'A', G: 'N', H: 'C', J: 'E'
+                                    };
+                                    char = charMap[rowLetter] || '';
+                                  }
+                                  return (
+                                    <div
+                                      key={colIndex}
+                                      className="bg-amber-500/10 border border-amber-500/20 text-amber-500/80 text-[8px] font-extrabold shrink-0 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-sm select-none"
+                                      title="Entrance"
+                                    >
+                                      {char}
+                                    </div>
+                                  );
+                                }
+
+                                if (cell.type === 'stairs') {
+                                  let char = '';
+                                  if (colIndex === 8) {
+                                    const leftStairsMap: Record<string, string> = {
+                                      C: 'S', D: 'T', E: 'A', F: 'I', G: 'R', H: 'S', J: '•', K: 'S', L: 'T', M: 'A'
+                                    };
+                                    char = leftStairsMap[rowLetter] || '';
+                                  } else if (colIndex === 29) {
+                                    const rightStairsMap: Record<string, string> = {
+                                      C: 'S', D: 'T', E: 'A', F: 'I', G: 'R', H: 'S', J: '•', K: 'S', L: 'T', M: 'A'
+                                    };
+                                    char = rightStairsMap[rowLetter] || '';
+                                  }
+                                  return (
+                                    <div
+                                      key={colIndex}
+                                      className="bg-blue-500/10 border border-blue-500/20 text-blue-400/80 text-[8px] font-extrabold shrink-0 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-sm select-none"
+                                      title="Stairs"
+                                    >
+                                      {char}
+                                    </div>
+                                  );
+                                }
+
+                                const seatId = cell.id!;
+                                const isBooked = unavailableSeats.has(seatId);
+                                const isSelected = selectedSeats.includes(seatId);
+                                const isCenterSeat = colIndex >= 18 && colIndex <= 21;
+
+                                const centerSeatClass = 'bg-white/15 border-white/50 text-white hover:bg-white/30 shadow-[0_0_8px_rgba(255,255,255,0.15)]';
+
+                                return (
+                                  <button
+                                    key={seatId}
+                                    type="button"
+                                    onClick={() => handleSeatClick(seatId)}
+                                    disabled={isBooked}
+                                    title={isCenterSeat ? `${seatId} (Kursi Tengah)` : seatId}
+                                    className={cn(
+                                      "w-5 h-5 md:w-6 md:h-6 rounded-t shrink-0 flex items-center justify-center text-[8px] sm:text-[9px] font-mono transition-all duration-300 cursor-pointer disabled:cursor-not-allowed relative",
+                                      isBooked
+                                        ? "bg-white/5 text-gray-600 opacity-50 border border-white/10"
+                                        : isSelected
+                                          ? "bg-amber-500 border border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)] transform scale-110 z-10"
+                                          : isCenterSeat
+                                            ? cn("border font-bold", centerSeatClass)
+                                            : "bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 text-gray-300"
+                                    )}
+                                  >
+                                    {cell.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </React.Fragment>
                         );
                       })}
                     </div>
