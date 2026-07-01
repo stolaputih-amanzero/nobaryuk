@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { cn, formatRupiah } from '@/utils';
-import { TrendingUp, Calendar, Ticket, DollarSign, Award, Zap } from 'lucide-react';
+import { TrendingUp, Calendar, Ticket, Award, Zap } from 'lucide-react';
 
 interface Booking {
   id: string;
@@ -36,6 +36,24 @@ const formatDateIndo = (dateStr: string) => {
   const day = parseInt(parts[2], 10);
   return `${day} ${MONTH_NAMES[monthIdx] || ''} ${year}`;
 };
+
+export const RupiahIcon = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M4 18V6h4.5a3 3 0 0 1 0 6H4" />
+    <path d="M7.5 12l3.5 6" />
+    <path d="M14 9v9" />
+    <path d="M14 11h2.5a2.5 2.5 0 0 1 0 5H14" />
+  </svg>
+);
 
 export default function SalesTrendChart({ bookings }: SalesTrendChartProps) {
   const [metric, setMetric] = useState<'tickets' | 'revenue'>('tickets');
@@ -268,7 +286,7 @@ export default function SalesTrendChart({ bookings }: SalesTrendChartProps) {
                   : "text-gray-400 hover:text-white"
               )}
             >
-              <DollarSign className="w-3.5 h-3.5" />
+              <RupiahIcon className="w-3.5 h-3.5" />
               Pendapatan
             </button>
           </div>

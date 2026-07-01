@@ -3,14 +3,14 @@ import { PRICING, SeatType } from '../store/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatRupiah, cn } from '@/utils';
 import { format, differenceInDays } from 'date-fns';
-import { AlertTriangle, CheckCircle2, TrendingUp, Users, DollarSign, Ticket, Loader2, FileText, Search, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, TrendingUp, Users, Ticket, Loader2, FileText, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient'; 
 import { Button } from '@/components/ui/Button';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2';
-import SalesTrendChart from '@/components/SalesTrendChart';
+import SalesTrendChart, { RupiahIcon } from '@/components/SalesTrendChart';
 
  
 export default function Dashboard() {
@@ -158,9 +158,9 @@ export default function Dashboard() {
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <MetricCard title="Total Penjualan" value={formatRupiah(stats.revenue)} icon={<TrendingUp />} />
-            <MetricCard title="Total Cost Cinepolis" value={formatRupiah(stats.cost)} icon={<DollarSign />} />
+            <MetricCard title="Total Cost Cinepolis" value={formatRupiah(stats.cost)} icon={<RupiahIcon />} />
             <MetricCard title="Proyeksi Laba Bersih" value={formatRupiah(stats.profit)} icon={<CheckCircle2 />} className="text-green-500" />
-            <MetricCard title="Potensi Sisa Penjualan" value={formatRupiah(stats.potentialRevenue)} icon={<DollarSign />} className="text-blue-400" />
+            <MetricCard title="Potensi Sisa Penjualan" value={formatRupiah(stats.potentialRevenue)} icon={<RupiahIcon />} className="text-blue-400" />
             <MetricCard title="Tiket Terjual" value={`${stats.soldSeats} / ${totalCapacity}`} icon={<Ticket />} />
           </div>
 
