@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2';
+import SalesTrendChart from '@/components/SalesTrendChart';
+
  
 export default function Dashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -161,6 +163,9 @@ export default function Dashboard() {
             <MetricCard title="Potensi Sisa Penjualan" value={formatRupiah(stats.potentialRevenue)} icon={<DollarSign />} className="text-blue-400" />
             <MetricCard title="Tiket Terjual" value={`${stats.soldSeats} / ${totalCapacity}`} icon={<Ticket />} />
           </div>
+
+          {/* Sales Trend Chart */}
+          <SalesTrendChart bookings={bookings} />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
