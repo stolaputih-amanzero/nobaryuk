@@ -689,7 +689,7 @@ export default function BookTickets() {
 
       {/* Seat Selection Panel */}
       <div className="w-full lg:w-2/3 order-1 lg:order-2 min-w-0">
-        <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5">
+        <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5 overflow-hidden">
           <CardContent className="p-4 sm:p-6">
             
             {/* Seat Grid - Render All Types */}

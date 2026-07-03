@@ -85,9 +85,13 @@ export default function Dashboard() {
       soldSeats += b.seatNumbers.length;
       
       marketingStats[b.marketingName] = (marketingStats[b.marketingName] || 0) + b.seatNumbers.length;
-      if (typeStats[b.seatType] !== undefined) {
-         typeStats[b.seatType] += b.seatNumbers.length;
-      }
+      b.seatNumbers.forEach((seat: string) => {
+        const prefix = seat.split('-')[0];
+        const type = (Object.keys(PRICING) as SeatType[]).find(t => PRICING[t].prefix === prefix);
+        if (type && typeStats[type] !== undefined) {
+          typeStats[type] += 1;
+        }
+      });
     });
 
     let potentialRevenue = 0;
@@ -424,14 +428,16 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
 
     // Menghitung jumlah kursi terjual untuk setiap tipe
     allTickets.forEach(t => {
-      const type = t.seatType || t.seat_type;
-      const count = (t.seatNumbers || t.seat_numbers || []).length;
+      const seats = t.seatNumbers || t.seat_numbers || [];
+      totalKursiTerjual += seats.length;
       
-      totalKursiTerjual += count;
-      
-      if (statsPerType[type]) {
-        statsPerType[type].sold += count;
-      }
+      seats.forEach((seat: string) => {
+        const prefix = seat.split('-')[0];
+        const type = (Object.keys(PRICING) as SeatType[]).find(key => PRICING[key].prefix === prefix);
+        if (type && statsPerType[type]) {
+          statsPerType[type].sold += 1;
+        }
+      });
     });
 
     const totalKapasitas = Object.values(statsPerType).reduce((sum, item) => sum + item.cap, 0);
