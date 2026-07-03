@@ -512,10 +512,10 @@ export default function BookTickets() {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Form Sidebar */}
-        <div className="w-full lg:w-1/3 shrink-0 order-2 lg:order-1 space-y-6 min-w-0">
+        <div className="lg:col-span-1 order-2 lg:order-1 space-y-6 min-w-0">
         <div>
           <h1 className="text-3xl font-display font-bold mb-2">{editId ? "Edit Tiket" : "Form Data Tiket"}</h1>
           <p className="text-gray-400">{editId ? "Update detail dan pemilihan kursi untuk tiket ini." : "Masukan data diri donatur atau pembeli tiket dengan lengkap."}</p>
@@ -688,8 +688,8 @@ export default function BookTickets() {
       </div>
 
       {/* Seat Selection Panel */}
-      <div className="w-full lg:w-2/3 order-1 lg:order-2 min-w-0">
-        <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5 overflow-hidden">
+      <div className="lg:col-span-2 order-1 lg:order-2 min-w-0">
+        <Card className="border-white/10 sticky text-gray-100 top-24 min-h-[600px] bg-white/5">
           <CardContent className="p-4 sm:p-6">
             
             {/* Seat Grid - Render All Types */}
