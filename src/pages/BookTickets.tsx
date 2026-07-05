@@ -60,6 +60,7 @@ export default function BookTickets() {
   });
 
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [upgrades, setUpgrades] = useState<Record<string, 'none' | 'depan' | 'belakang'>>({});
   const [proofFile, setProofFile] = useState<File | null>(null);
 
   // 1. Tarik Data Ketersediaan Kursi (Dipisah agar bisa dipanggil ulang saat race condition)
@@ -119,6 +120,26 @@ export default function BookTickets() {
           });
           setSelectedSeats(data.seat_numbers || []);
           setExistingProofUrl(data.payment_proof_url);
+
+          // Parse upgrades from seat_type
+          const seatTypeStr = data.seat_type || '';
+          const initialUpgrades: Record<string, 'none' | 'depan' | 'belakang'> = {};
+          if (data.seat_numbers) {
+            const hasDepan = seatTypeStr.includes('Upgrade dari Depan');
+            const hasBelakang = seatTypeStr.includes('Upgrade dari Belakang');
+            data.seat_numbers.forEach((seatId: string) => {
+              if (seatId.startsWith('RT-')) {
+                if (hasDepan) {
+                  initialUpgrades[seatId] = 'depan';
+                } else if (hasBelakang) {
+                  initialUpgrades[seatId] = 'belakang';
+                } else {
+                  initialUpgrades[seatId] = 'none';
+                }
+              }
+            });
+          }
+          setUpgrades(initialUpgrades);
         }
       } catch (error) {
         console.error("Gagal menarik data edit:", error);
@@ -334,7 +355,18 @@ export default function BookTickets() {
       const prefix = seatId.split('-')[0];
       const type = (Object.keys(PRICING) as SeatType[]).find(t => PRICING[t].prefix === prefix);
       if (type) {
-        price += PRICING[type].price;
+        if (prefix === 'RT') {
+          const upgradeType = upgrades[seatId];
+          if (upgradeType === 'depan') {
+            price += PRICING['Reguler - Depan'].price;
+          } else if (upgradeType === 'belakang') {
+            price += PRICING['Reguler - Belakang'].price;
+          } else {
+            price += PRICING[type].price;
+          }
+        } else {
+          price += PRICING[type].price;
+        }
         cost += PRICING[type].cost;
       }
     });
@@ -412,11 +444,30 @@ export default function BookTickets() {
       
       const sortedSeats = sortSeats(selectedSeats);
 
-      const selectedTypes = Array.from(new Set(selectedSeats.map(seatId => {
+      const selectedTypesSet = new Set(selectedSeats.map(seatId => {
         const prefix = seatId.split('-')[0];
         return (Object.keys(PRICING) as SeatType[]).find(t => PRICING[t].prefix === prefix);
-      }).filter(Boolean)));
-      const ticketSeatType = selectedTypes.length > 0 ? selectedTypes.join(', ') : form.seatType;
+      }).filter(Boolean));
+      
+      const hasUpgradeDepan = selectedSeats.some(s => s.startsWith('RT-') && upgrades[s] === 'depan');
+      const hasUpgradeBelakang = selectedSeats.some(s => s.startsWith('RT-') && upgrades[s] === 'belakang');
+
+      const typesList: string[] = [];
+      selectedTypesSet.forEach(t => {
+        if (t === 'Reguler - Tengah') {
+          let tengahDesc = 'Reguler - Tengah';
+          const upgradesList: string[] = [];
+          if (hasUpgradeDepan) upgradesList.push('Upgrade dari Depan');
+          if (hasUpgradeBelakang) upgradesList.push('Upgrade dari Belakang');
+          if (upgradesList.length > 0) {
+            tengahDesc += ` (${upgradesList.join(', ')})`;
+          }
+          typesList.push(tengahDesc);
+        } else {
+          typesList.push(t as string);
+        }
+      });
+      const ticketSeatType = typesList.length > 0 ? typesList.join(', ') : form.seatType;
 
       const ticketData = {
         buyer_name: form.buyerName,
@@ -604,6 +655,39 @@ export default function BookTickets() {
                   <option value="English">English</option>
                 </select>
               </div>
+
+              {/* Promo Free Upgrade Section */}
+              {selectedSeats.some(s => s.startsWith('RT-')) && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-amber-500">Promo Free Upgrade</span>
+                    <span className="text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-extrabold uppercase animate-pulse">
+                      KURSI DEPAN/BELAKANG HABIS
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Donatur mendapat opsi upgrade ke **Reguler Tengah** tetapi membayar sesuai harga tiket asal (Depan/Belakang) karena ketersediaan kursi asalnya sudah/hampir habis.
+                  </p>
+                  
+                  <div className="space-y-2 pt-2 border-t border-white/10">
+                    {selectedSeats.filter(s => s.startsWith('RT-')).map(seatId => (
+                      <div key={seatId} className="flex items-center justify-between gap-3 text-xs bg-black/40 p-2.5 rounded border border-white/5 font-sans">
+                        <span className="font-mono font-bold text-gray-300">Kursi {seatId.replace('RT-', '')}</span>
+                        <select
+                          value={upgrades[seatId] || 'none'}
+                          onChange={e => setUpgrades(prev => ({ ...prev, [seatId]: e.target.value as any }))}
+                          className="bg-zinc-900 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                        >
+                          <option value="none">Normal (Rp 750.000)</option>
+                          <option value="depan">Upgrade dari Depan (Rp 250.000)</option>
+                          <option value="belakang">Upgrade dari Belakang (Rp 500.000)</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center justify-between">

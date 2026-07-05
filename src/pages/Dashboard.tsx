@@ -42,20 +42,31 @@ export default function Dashboard() {
 
         if (error) throw error;
 
-        const formattedData = data.map((row: any) => ({
-          id: row.id,
-          buyerName: row.buyer_name,
-          marketingName: row.marketing_name,
-          seatType: row.seat_type as SeatType,
-          seatNumbers: row.seat_numbers || [],
-          paymentMethod: row.payment_method,
-          paymentTenor: row.payment_tenor,
-          totalPrice: row.total_price,
-          totalCost: (PRICING[row.seat_type as SeatType]?.cost || 0) * (row.seat_numbers?.length || 0),
-          verified: row.is_verified,
-          purchaseDate: row.purchase_date,
-          settlementDate: row.settlement_date,
-        }));
+        const formattedData = data.map((row: any) => {
+          let seatCost = 0;
+          const seatNumbers = row.seat_numbers || [];
+          seatNumbers.forEach((seatId: string) => {
+            const prefix = seatId.split('-')[0];
+            const type = (Object.keys(PRICING) as SeatType[]).find(t => PRICING[t].prefix === prefix);
+            if (type) {
+              seatCost += PRICING[type].cost;
+            }
+          });
+          return {
+            id: row.id,
+            buyerName: row.buyer_name,
+            marketingName: row.marketing_name,
+            seatType: row.seat_type as SeatType,
+            seatNumbers: seatNumbers,
+            paymentMethod: row.payment_method,
+            paymentTenor: row.payment_tenor,
+            totalPrice: row.total_price,
+            totalCost: seatCost,
+            verified: row.is_verified,
+            purchaseDate: row.purchase_date,
+            settlementDate: row.settlement_date,
+          };
+        });
 
         setBookings(formattedData);
       } catch (error) {
