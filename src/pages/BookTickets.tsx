@@ -671,12 +671,12 @@ export default function BookTickets() {
                   
                   <div className="space-y-2 pt-2 border-t border-white/10">
                     {selectedSeats.filter(s => s.startsWith('RT-')).map(seatId => (
-                      <div key={seatId} className="flex items-center justify-between gap-3 text-xs bg-black/40 p-2.5 rounded border border-white/5 font-sans">
+                      <div key={seatId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs bg-black/40 p-2.5 rounded border border-white/5 font-sans">
                         <span className="font-mono font-bold text-gray-300">Kursi {seatId.replace('RT-', '')}</span>
                         <select
                           value={upgrades[seatId] || 'none'}
                           onChange={e => setUpgrades(prev => ({ ...prev, [seatId]: e.target.value as any }))}
-                          className="bg-zinc-900 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                          className="w-full sm:w-auto bg-zinc-900 border border-white/15 rounded-lg px-2 py-1.5 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                         >
                           <option value="none">Normal (Rp 750.000)</option>
                           <option value="depan">Upgrade dari Depan (Rp 250.000)</option>
