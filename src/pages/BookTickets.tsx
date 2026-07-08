@@ -351,7 +351,20 @@ export default function BookTickets() {
   const calculateTotals = () => {
     let price = 0;
     let cost = 0;
-    selectedSeats.forEach(seatId => {
+
+    // Separate VIP and non-VIP seats
+    const vipSeats = selectedSeats.filter(seatId => seatId.startsWith('V-'));
+    const nonVipSeats = selectedSeats.filter(seatId => !seatId.startsWith('V-'));
+
+    // 1. VIP Buy 1 Get 1 Calculation
+    const vipCount = vipSeats.length;
+    const freeVipCount = Math.floor(vipCount / 2);
+    const paidVipCount = vipCount - freeVipCount;
+    price += paidVipCount * PRICING['VIP'].price;
+    cost += vipCount * PRICING['VIP'].cost;
+
+    // 2. Non-VIP Seats Calculation
+    nonVipSeats.forEach(seatId => {
       const prefix = seatId.split('-')[0];
       const type = (Object.keys(PRICING) as SeatType[]).find(t => PRICING[t].prefix === prefix);
       if (type) {
@@ -370,6 +383,7 @@ export default function BookTickets() {
         cost += PRICING[type].cost;
       }
     });
+
     return { price, cost };
   };
 
@@ -687,6 +701,37 @@ export default function BookTickets() {
                   </div>
                 </div>
               )}
+
+              {/* Promo VIP Buy 1 Get 1 Section */}
+              {selectedSeats.some(s => s.startsWith('V-')) && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-amber-500">Promo VIP Buy 1 Get 1</span>
+                    <span className="text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-extrabold uppercase animate-pulse">
+                      PROMO AKTIF
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Setiap pembelian 2 tiket VIP, Anda hanya membayar 1 tiket (Buy 1 Get 1).
+                  </p>
+                  
+                  <div className="pt-2 border-t border-white/10 flex justify-between text-xs">
+                    <span className="text-gray-400">Total VIP Terpilih:</span>
+                    <span className="font-bold text-white">{selectedSeats.filter(s => s.startsWith('V-')).length} Kursi</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Gratis VIP:</span>
+                    <span className="font-bold text-green-400">-{Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2)} Kursi</span>
+                  </div>
+                  {Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2) > 0 && (
+                    <div className="flex justify-between text-xs pt-1 text-green-400 font-medium">
+                      <span>Total Hemat:</span>
+                      <span>{formatRupiah(Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2) * PRICING['VIP'].price)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
 
 
               <div>
