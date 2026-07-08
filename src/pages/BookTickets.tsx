@@ -62,6 +62,7 @@ export default function BookTickets() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [upgrades, setUpgrades] = useState<Record<string, 'none' | 'depan' | 'belakang'>>({});
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [applyVipBogo, setApplyVipBogo] = useState(true);
 
   // 1. Tarik Data Ketersediaan Kursi (Dipisah agar bisa dipanggil ulang saat race condition)
   const fetchReservedSeats = async () => {
@@ -358,7 +359,7 @@ export default function BookTickets() {
 
     // 1. VIP Buy 1 Get 1 Calculation
     const vipCount = vipSeats.length;
-    const freeVipCount = Math.floor(vipCount / 2);
+    const freeVipCount = applyVipBogo ? Math.floor(vipCount / 2) : 0;
     const paidVipCount = vipCount - freeVipCount;
     price += paidVipCount * PRICING['VIP'].price;
     cost += vipCount * PRICING['VIP'].cost;
@@ -704,29 +705,37 @@ export default function BookTickets() {
 
               {/* Promo VIP Buy 1 Get 1 Section */}
               {selectedSeats.some(s => s.startsWith('V-')) && (
-                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                <div className={cn("border rounded-xl p-4 space-y-3 transition-all duration-300 animate-in fade-in slide-in-from-top-2", applyVipBogo ? "bg-amber-500/5 border-amber-500/20" : "bg-white/5 border-white/10 opacity-70")}>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-amber-500">Promo VIP Buy 1 Get 1</span>
-                    <span className="text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded font-extrabold uppercase animate-pulse">
-                      PROMO AKTIF
+                    <span className={cn("text-sm font-bold transition-colors", applyVipBogo ? "text-amber-500" : "text-gray-400")}>Promo VIP Buy 1 Get 1</span>
+                    <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase transition-all duration-300", applyVipBogo ? "bg-amber-500 text-black animate-pulse" : "bg-white/10 text-gray-400")}>
+                      {applyVipBogo ? "PROMO AKTIF" : "NONAKTIF"}
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-400 leading-relaxed">
                     Setiap pembelian 2 tiket VIP, Anda hanya membayar 1 tiket (Buy 1 Get 1).
                   </p>
                   
-                  <div className="pt-2 border-t border-white/10 flex justify-between text-xs">
-                    <span className="text-gray-400">Total VIP Terpilih:</span>
-                    <span className="font-bold text-white">{selectedSeats.filter(s => s.startsWith('V-')).length} Kursi</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-400">Gratis VIP:</span>
-                    <span className="font-bold text-green-400">-{Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2)} Kursi</span>
-                  </div>
-                  {Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2) > 0 && (
-                    <div className="flex justify-between text-xs pt-1 text-green-400 font-medium">
-                      <span>Total Hemat:</span>
-                      <span>{formatRupiah(Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2) * PRICING['VIP'].price)}</span>
+                  {applyVipBogo ? (
+                    <>
+                      <div className="pt-2 border-t border-white/10 flex justify-between text-xs">
+                        <span className="text-gray-400">Total VIP Terpilih:</span>
+                        <span className="font-bold text-white">{selectedSeats.filter(s => s.startsWith('V-')).length} Kursi</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400">Gratis VIP:</span>
+                        <span className="font-bold text-green-400">-{Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2)} Kursi</span>
+                      </div>
+                      {Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2) > 0 && (
+                        <div className="flex justify-between text-xs pt-1 text-green-400 font-medium">
+                          <span>Total Hemat:</span>
+                          <span>{formatRupiah(Math.floor(selectedSeats.filter(s => s.startsWith('V-')).length / 2) * PRICING['VIP'].price)}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="pt-2 border-t border-white/10 text-xs text-gray-500 italic">
+                      Promosi dinonaktifkan secara manual.
                     </div>
                   )}
                 </div>
@@ -787,6 +796,22 @@ export default function BookTickets() {
                   </div>
                 </div>
               </div>
+
+              {/* Checkbox Promo VIP */}
+              {selectedSeats.some(s => s.startsWith('V-')) && (
+                <div className="pt-2 border-t border-white/10">
+                   <button 
+                    type="button"
+                    onClick={() => setApplyVipBogo(!applyVipBogo)}
+                    className="flex items-center gap-3 cursor-pointer text-left w-full focus:outline-none group mb-3"
+                   >
+                      <div className={cn("w-6 h-6 rounded flex items-center justify-center border transition-colors group-hover:border-amber-500/50", applyVipBogo ? "bg-amber-500 border-amber-500 group-hover:border-amber-400" : "bg-white/5 border-white/20")}>
+                        {applyVipBogo && <Check className="w-4 h-4 text-black stroke-[3]" />}
+                      </div>
+                      <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Terapkan Promo VIP Buy 1 Get 1</span>
+                   </button>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-white/10">
                  <button 
