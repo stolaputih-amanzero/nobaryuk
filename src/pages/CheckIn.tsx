@@ -100,7 +100,8 @@ export default function CheckIn() {
           checkedInSeats: row.is_checked_in ? row.seat_numbers : [],
           createdAt: row.created_at,
           seatType: row.seat_type,
-          totalPrice: row.total_price
+          totalPrice: row.total_price,
+          paymentProofUrl: row.payment_proof_url
         }));
         formatted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setBookings(formatted);
@@ -192,9 +193,12 @@ const downloadAttendancePDF = () => {
       
       return [
         index + 1,
-        ticket.id.toUpperCase().substring(0, 8) + '...', // Persingkat UUID agar tabel muat
+        ticket.id.toUpperCase().substring(0, 8),
         ticket.buyerName,
         ticket.seatNumbers.join(', '),
+        isFreeUpgrade(ticket) ? 'Free Upgrade' : isVipBogo(ticket) ? 'Buy 1 Get 1' : '-',
+        ticket.paymentProofUrl ? 'Ada' : 'Tidak Ada',
+        ticket.verified ? 'LUNAS' : 'BELUM LUNAS',
         allCheckedIn ? 'HADIR' : 'BELUM DATANG'
       ];
     });
@@ -202,29 +206,55 @@ const downloadAttendancePDF = () => {
     // 4. GENERATE TABEL OTOMATIS
     autoTable(pdf, {
       startY: 75,
-      head: [['No', 'ID Tiket', 'Nama Pembeli', 'Nomor Kursi', 'Status Kehadiran']],
+      head: [['No', 'ID Tiket', 'Nama Pembeli', 'Kursi', 'Promo', 'Bukti', 'Status', 'Kehadiran']],
       body: tableRows,
       theme: 'striped',
       headStyles: {
         fillColor: [245, 158, 11], // Header tabel warna Amber
         textColor: [0, 0, 0],       // Teks hitam kontras
-        fontStyle: 'bold'
+        fontStyle: 'bold',
+        fontSize: 8
+      },
+      styles: {
+        fontSize: 7.5,
+        cellPadding: 2
       },
       columnStyles: {
-        0: { cellWidth: 10 },  // No
-        1: { cellWidth: 30 },  // ID Tiket
-        2: { cellWidth: 55 },  // Nama
-        3: { cellWidth: 45 },  // Kursi
-        4: { cellWidth: 40 }   // Status
+        0: { cellWidth: 8 },  
+        1: { cellWidth: 16 },  
+        2: { cellWidth: 38 },  
+        3: { cellWidth: 26 },  
+        4: { cellWidth: 26 },
+        5: { cellWidth: 16 },
+        6: { cellWidth: 20 },
+        7: { cellWidth: 30 }
       },
       didParseCell: (data) => {
-        // Trik mewarnai baris Status khusus penonton yang sudah "HADIR" menjadi Hijau
-        if (data.section === 'body' && data.column.index === 4) {
+        // Mewarnai status Lunas / Belum Lunas
+        if (data.section === 'body' && data.column.index === 6) {
+          if (data.cell.raw === 'LUNAS') {
+            data.cell.styles.textColor = [34, 197, 94]; // Hijau
+            data.cell.styles.fontStyle = 'bold';
+          } else {
+            data.cell.styles.textColor = [239, 68, 68]; // Merah
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+        // Mewarnai bukti bayar Ada / Tidak Ada
+        if (data.section === 'body' && data.column.index === 5) {
+          if (data.cell.raw === 'Ada') {
+            data.cell.styles.textColor = [34, 197, 94]; // Hijau
+          } else {
+            data.cell.styles.textColor = [239, 68, 68]; // Merah
+          }
+        }
+        // Mewarnai baris Kehadiran khusus penonton yang sudah "HADIR" menjadi Hijau
+        if (data.section === 'body' && data.column.index === 7) {
           if (data.cell.raw === 'HADIR') {
             data.cell.styles.textColor = [34, 197, 94]; // Warna hijau Tailwind
             data.cell.styles.fontStyle = 'bold';
           } else {
-            data.cell.styles.textColor = [239, 68, 68];  // Warna merah Tailwind
+            data.cell.styles.textColor = [156, 163, 175];  // Abu-abu
           }
         }
       }

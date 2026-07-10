@@ -65,6 +65,7 @@ export default function Dashboard() {
             verified: row.is_verified,
             purchaseDate: row.purchase_date,
             settlementDate: row.settlement_date,
+            paymentProofUrl: row.payment_proof_url
           };
         });
 
@@ -397,6 +398,21 @@ function MetricCard({ title, value, icon, className = "" }: { title: string; val
   );
 }
 
+const isVipBogo = (ticket: any) => {
+  if (!ticket.seatNumbers && !ticket.seat_numbers) return false;
+  const seats = ticket.seatNumbers || ticket.seat_numbers || [];
+  const vipSeats = seats.filter((s: string) => s.startsWith('V-'));
+  if (vipSeats.length < 2) return false;
+  const totalPrice = ticket.totalPrice || ticket.total_price || 0;
+  const normalVipPrice = vipSeats.length * 2500000;
+  return totalPrice < normalVipPrice;
+};
+
+const isFreeUpgrade = (ticket: any) => {
+  const seatType = ticket.seatType || ticket.seat_type || '';
+  return seatType && (seatType.includes('Upgrade dari Depan') || seatType.includes('Upgrade dari Belakang'));
+};
+
 const downloadAllBookingsPDF = (allTickets: any[]) => {
   try {
     const pdf = new jsPDF('l', 'mm', 'a4');
@@ -512,6 +528,8 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
         ticket.buyerName || ticket.buyer_name || '-',
         (ticket.seatNumbers || ticket.seat_numbers || []).join(', ') || '-',
         formatRupiahLocal(ticket.totalPrice || ticket.total_price || 0),
+        isFreeUpgrade(ticket) ? 'Free Upgrade' : isVipBogo(ticket) ? 'Buy 1 Get 1' : '-',
+        ticket.paymentProofUrl || ticket.payment_proof_url ? 'Ada' : 'Tidak Ada',
         ticket.paymentMethod || ticket.payment_method || '-',
         ticket.marketingName || ticket.marketing_name || '-',
         ticket.verified || ticket.is_verified ? 'LUNAS' : 'PENDING'
@@ -521,7 +539,7 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
     // 5. RENDER TABEL MENGGUNAKAN AUTOTABLE (Posisi Tabel Diturunkan ke Y: 74)
     autoTable(pdf, {
       startY: 74,
-      head: [['No', 'Tgl Beli', 'ID Tiket', 'Nama Pembeli', 'Kursi', 'Total Harga', 'Metode Bayar', 'Marketing', 'Status']],
+      head: [['No', 'Tgl Beli', 'ID Tiket', 'Nama Pembeli', 'Kursi', 'Total Harga', 'Promo', 'Bukti', 'Metode Bayar', 'Marketing', 'Status']],
       body: tableRows,
       theme: 'striped',
       headStyles: {
@@ -535,24 +553,35 @@ const downloadAllBookingsPDF = (allTickets: any[]) => {
         cellPadding: 3
       },
       columnStyles: {
-        0: { cellWidth: 10 },  
-        1: { cellWidth: 22 },   
-        2: { cellWidth: 22 },  
-        3: { cellWidth: 46 },  
-        4: { cellWidth: 35 },  
-        5: { cellWidth: 28 },  
-        6: { cellWidth: 35 },  
-        7: { cellWidth: 39 },  
-        8: { cellWidth: 30 }   
+        0: { cellWidth: 8 },  
+        1: { cellWidth: 20 },   
+        2: { cellWidth: 20 },  
+        3: { cellWidth: 44 },  
+        4: { cellWidth: 28 },  
+        5: { cellWidth: 26 },  
+        6: { cellWidth: 28 },  
+        7: { cellWidth: 16 },  
+        8: { cellWidth: 27 },  
+        9: { cellWidth: 30 },  
+        10: { cellWidth: 20 }   
       },
       didParseCell: (data) => {
-        if (data.section === 'body' && data.column.index === 8) {
+        // Mewarnai status Lunas / Pending
+        if (data.section === 'body' && data.column.index === 10) {
           if (data.cell.raw === 'LUNAS') {
             data.cell.styles.textColor = [34, 197, 94]; 
             data.cell.styles.fontStyle = 'bold';
           } else {
             data.cell.styles.textColor = [234, 179, 8]; 
             data.cell.styles.fontStyle = 'bold';
+          }
+        }
+        // Mewarnai bukti bayar Ada / Tidak Ada
+        if (data.section === 'body' && data.column.index === 7) {
+          if (data.cell.raw === 'Ada') {
+            data.cell.styles.textColor = [34, 197, 94]; 
+          } else {
+            data.cell.styles.textColor = [239, 68, 68]; 
           }
         }
       }
