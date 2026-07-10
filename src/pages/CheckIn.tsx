@@ -63,6 +63,18 @@ const getCategoryColorObj = (seatIdOrType: string) => {
   };
 };
 
+const isVipBogo = (ticket: any) => {
+  if (!ticket.seatNumbers || !ticket.totalPrice) return false;
+  const vipSeats = ticket.seatNumbers.filter((s: string) => s.startsWith('V-'));
+  if (vipSeats.length < 2) return false;
+  const normalVipPrice = vipSeats.length * 2500000;
+  return ticket.totalPrice < normalVipPrice;
+};
+
+const isFreeUpgrade = (ticket: any) => {
+  return ticket.seatType && (ticket.seatType.includes('Upgrade dari Depan') || ticket.seatType.includes('Upgrade dari Belakang'));
+};
+
 export default function CheckIn() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +98,9 @@ export default function CheckIn() {
           verified: row.is_verified,
           checkedIn: row.is_checked_in,
           checkedInSeats: row.is_checked_in ? row.seat_numbers : [],
-          createdAt: row.created_at
+          createdAt: row.created_at,
+          seatType: row.seat_type,
+          totalPrice: row.total_price
         }));
         formatted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setBookings(formatted);
@@ -254,11 +268,19 @@ const downloadAttendancePDF = () => {
         // Otomatis tandai semua kursi milik pembeli tersebut sebagai HADIR
         await updateCheckInStatus(foundTicket.id, true, [...foundTicket.seatNumbers]);
         
+        let promoText = '';
+        if (isFreeUpgrade(foundTicket)) {
+          promoText = `<span class="inline-block mt-2 text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 rounded animate-pulse">Promo: Free Upgrade</span>`;
+        } else if (isVipBogo(foundTicket)) {
+          promoText = `<span class="inline-block mt-2 text-[10px] font-extrabold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded animate-pulse">Promo: Buy 1 Get 1</span>`;
+        }
+
         Swal.fire({
           title: 'CHECK-IN BERHASIL!',
           html: `<div class="text-left">
                    <b>Pembeli:</b> ${foundTicket.buyerName}<br/>
                    <b>Kursi:</b> <span class="text-amber-500 font-mono">${foundTicket.seatNumbers.join(', ')}</span>
+                   ${promoText ? `<br/>${promoText}` : ''}
                  </div>`,
           icon: 'success',
           background: '#111111',
@@ -693,11 +715,23 @@ const downloadAttendancePDF = () => {
                         <div className="font-bold text-white text-sm">{ticket.buyerName}</div>
                         <div className="text-[10px] text-gray-500 font-mono mt-0.5">ID: {ticket.id.toUpperCase()}</div>
                       </div>
-                      {!ticket.verified && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-500/10 px-2 py-0.5 rounded">
-                          <AlertCircle className="w-3 h-3" /> Blm Lunas
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        {!ticket.verified && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-500/10 px-2 py-0.5 rounded">
+                            <AlertCircle className="w-3 h-3" /> Blm Lunas
+                          </span>
+                        )}
+                        {isFreeUpgrade(ticket) && (
+                          <span className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded animate-pulse">
+                            Free Upgrade
+                          </span>
+                        )}
+                        {isVipBogo(ticket) && (
+                          <span className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded animate-pulse">
+                            Buy 1 Get 1
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
